@@ -201,8 +201,8 @@ public class AttendanceService {
             }
 
             long minutes = Duration.between(newClockIn, newClockOut).toMinutes();
-            if (minutes > 60) {
-                minutes -= 60;
+            if (minutes > BREAK_THRESHOLD_MIN) {
+                minutes -= BREAK_MIN;
             }
 
             BigDecimal totalHours = BigDecimal.valueOf(minutes)
