@@ -20,7 +20,7 @@ public class AttendanceService {
     private final AttendanceDAO dao = new AttendanceDAO();
     
     private static final LocalTime EARLIEST_IN = LocalTime.of(6, 0);
-    private static final LocalTime LATEST_IN = LocalTime.of(23, 0);
+    private static final LocalTime LATEST_IN = LocalTime.of(17, 0);
     private static final LocalTime ONTIME_BY = LocalTime.of(10, 0);
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
     
