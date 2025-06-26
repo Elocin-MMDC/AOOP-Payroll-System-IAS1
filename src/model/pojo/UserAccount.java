@@ -2,7 +2,6 @@ package model.pojo;
 
 import java.time.LocalDateTime;
 
-
 public class UserAccount {
     private int userID;
     private int employeeID;
@@ -12,8 +11,8 @@ public class UserAccount {
     private String accountStatus;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private LocalDateTime reactivatedAt;   // nullable
-    private LocalDateTime deactivatedAt;   // nullable
+    private LocalDateTime reactivatedAt;
+    private LocalDateTime deactivatedAt;
 
     public UserAccount(int userID, int employeeID, String username, String password, int roleID, String accountStatus, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime reactivatedAt, LocalDateTime deactivatedAt) {
         this.userID = userID;
@@ -26,6 +25,10 @@ public class UserAccount {
         this.updatedAt = updatedAt;
         this.reactivatedAt = reactivatedAt;
         this.deactivatedAt = deactivatedAt;
+    }
+    
+    public UserAccount() {
+        
     }
 
     public int getUserID() {

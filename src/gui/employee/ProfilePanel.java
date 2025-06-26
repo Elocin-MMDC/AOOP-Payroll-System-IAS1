@@ -1,6 +1,10 @@
 package gui.employee;
 
 import java.awt.CardLayout;
+import model.dao.EmployeeViewDAO;
+import model.pojo.EmployeeView;
+import util.Session;
+import util.UIUtil;
 
 public class ProfilePanel extends javax.swing.JPanel {
     
@@ -9,6 +13,39 @@ public class ProfilePanel extends javax.swing.JPanel {
     public ProfilePanel(EmployeePortal employeePortal) {
         this.employeePortal = employeePortal;
         initComponents();
+        UIUtil.setGreeting(jLabelHelloEmployee, "Employee");
+        loadProfile();
+    }
+    
+    private void loadProfile() {
+        int empId = Session.getCurrentUser().getEmployeeID();
+        
+        EmployeeView efd = new EmployeeViewDAO().getById(empId);
+        
+        if (efd != null) {
+            jTextFieldEmployeeID.setText(String.valueOf(efd.getEmployeeID()));
+            jTextFieldLastName.setText(efd.getLastName());
+            jTextFieldFirstName.setText(efd.getFirstName());
+            jTextFieldGender.setText(efd.getGender());
+            jTextFieldBirthday.setText(efd.getBirthday().toString());
+            jTextFieldPhoneNumber.setText(efd.getPhoneNumber());
+            jTextAreaAddress.setText(efd.getFullAddress());
+            jTextFieldWorkStatus.setText(efd.getWorkStatus());
+            jTextFieldRole.setText(efd.getRole());
+            jTextFieldPosition.setText(efd.getPositionTitle());
+            jTextFieldDepartment.setText(efd.getDepartmentName());
+            jTextFieldSupervisor.setText(efd.getSupervisorName());
+            jTextFieldSssNumber.setText(efd.getSssNumber());
+            jTextFieldPhilHealthNumber.setText(efd.getPhilHealthNumber());
+            jTextFieldTin.setText(efd.getTin());
+            jTextFieldPagIbigNumber.setText(efd.getPagIbigNumber());
+            jTextFieldBasicSalary.setText(efd.getBasicSalary().toPlainString());
+            jTextFieldSemiMonthlyRate.setText(efd.getSemiMonthlyRate().toPlainString());
+            jTextFieldHourlyRate.setText(efd.getHourlyRate().toPlainString());
+            jTextFieldRiceSubsidy.setText(efd.getRiceSubsidy().toPlainString());
+            jTextFieldPhoneAllowance.setText(efd.getPhoneAllowance().toPlainString());
+            jTextFieldClothingAllowance.setText(efd.getClothingAllowance().toPlainString());
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -39,7 +76,7 @@ public class ProfilePanel extends javax.swing.JPanel {
         jTextFieldClothingAllowance = new javax.swing.JTextField();
         jTextFieldPhoneNumber = new javax.swing.JTextField();
         jTextFieldLastName = new javax.swing.JTextField();
-        jTextFieldEmployeeNumber = new javax.swing.JTextField();
+        jTextFieldEmployeeID = new javax.swing.JTextField();
         jLabelEmployeeNumber = new javax.swing.JLabel();
         jLabelLastName = new javax.swing.JLabel();
         jLabelFirstName = new javax.swing.JLabel();
@@ -78,7 +115,7 @@ public class ProfilePanel extends javax.swing.JPanel {
         jLabelHelloEmployee.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         jLabelHelloEmployee.setText("Hello, Employee!");
         jPanel1.add(jLabelHelloEmployee);
-        jLabelHelloEmployee.setBounds(30, 30, 210, 29);
+        jLabelHelloEmployee.setBounds(30, 30, 610, 29);
 
         jLabelProfileSmall.setText("Profile");
         jPanel1.add(jLabelProfileSmall);
@@ -160,7 +197,7 @@ public class ProfilePanel extends javax.swing.JPanel {
         jPanelProfileBox.add(jLabelSssNumber);
         jLabelSssNumber.setBounds(550, 170, 270, 40);
 
-        jTextFieldSssNumber.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldSssNumber.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldSssNumber.setEnabled(false);
         jTextFieldSssNumber.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -170,6 +207,7 @@ public class ProfilePanel extends javax.swing.JPanel {
         jPanelProfileBox.add(jTextFieldSssNumber);
         jTextFieldSssNumber.setBounds(700, 170, 330, 40);
 
+        jTextFieldPhilHealthNumber.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldPhilHealthNumber.setEnabled(false);
         jTextFieldPhilHealthNumber.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -179,7 +217,7 @@ public class ProfilePanel extends javax.swing.JPanel {
         jPanelProfileBox.add(jTextFieldPhilHealthNumber);
         jTextFieldPhilHealthNumber.setBounds(700, 210, 330, 40);
 
-        jTextFieldTin.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldTin.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldTin.setEnabled(false);
         jTextFieldTin.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -189,6 +227,7 @@ public class ProfilePanel extends javax.swing.JPanel {
         jPanelProfileBox.add(jTextFieldTin);
         jTextFieldTin.setBounds(700, 250, 330, 40);
 
+        jTextFieldPagIbigNumber.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldPagIbigNumber.setEnabled(false);
         jTextFieldPagIbigNumber.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -198,7 +237,7 @@ public class ProfilePanel extends javax.swing.JPanel {
         jPanelProfileBox.add(jTextFieldPagIbigNumber);
         jTextFieldPagIbigNumber.setBounds(700, 290, 330, 40);
 
-        jTextFieldSemiMonthlyRate.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldSemiMonthlyRate.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldSemiMonthlyRate.setEnabled(false);
         jTextFieldSemiMonthlyRate.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -208,6 +247,7 @@ public class ProfilePanel extends javax.swing.JPanel {
         jPanelProfileBox.add(jTextFieldSemiMonthlyRate);
         jTextFieldSemiMonthlyRate.setBounds(700, 370, 330, 40);
 
+        jTextFieldHourlyRate.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldHourlyRate.setEnabled(false);
         jTextFieldHourlyRate.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -217,7 +257,7 @@ public class ProfilePanel extends javax.swing.JPanel {
         jPanelProfileBox.add(jTextFieldHourlyRate);
         jTextFieldHourlyRate.setBounds(700, 410, 330, 40);
 
-        jTextFieldRiceSubsidy.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldRiceSubsidy.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldRiceSubsidy.setEnabled(false);
         jTextFieldRiceSubsidy.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -227,6 +267,7 @@ public class ProfilePanel extends javax.swing.JPanel {
         jPanelProfileBox.add(jTextFieldRiceSubsidy);
         jTextFieldRiceSubsidy.setBounds(700, 450, 330, 40);
 
+        jTextFieldPhoneAllowance.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldPhoneAllowance.setEnabled(false);
         jTextFieldPhoneAllowance.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -236,7 +277,7 @@ public class ProfilePanel extends javax.swing.JPanel {
         jPanelProfileBox.add(jTextFieldPhoneAllowance);
         jTextFieldPhoneAllowance.setBounds(700, 490, 330, 40);
 
-        jTextFieldClothingAllowance.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldClothingAllowance.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldClothingAllowance.setEnabled(false);
         jTextFieldClothingAllowance.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -246,7 +287,7 @@ public class ProfilePanel extends javax.swing.JPanel {
         jPanelProfileBox.add(jTextFieldClothingAllowance);
         jTextFieldClothingAllowance.setBounds(700, 530, 330, 40);
 
-        jTextFieldPhoneNumber.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldPhoneNumber.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldPhoneNumber.setEnabled(false);
         jTextFieldPhoneNumber.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -256,6 +297,7 @@ public class ProfilePanel extends javax.swing.JPanel {
         jPanelProfileBox.add(jTextFieldPhoneNumber);
         jTextFieldPhoneNumber.setBounds(180, 370, 340, 40);
 
+        jTextFieldLastName.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldLastName.setEnabled(false);
         jTextFieldLastName.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -265,21 +307,21 @@ public class ProfilePanel extends javax.swing.JPanel {
         jPanelProfileBox.add(jTextFieldLastName);
         jTextFieldLastName.setBounds(180, 170, 340, 40);
 
-        jTextFieldEmployeeNumber.setDisabledTextColor(new java.awt.Color(255, 255, 255));
-        jTextFieldEmployeeNumber.setEnabled(false);
-        jTextFieldEmployeeNumber.addActionListener(new java.awt.event.ActionListener() {
+        jTextFieldEmployeeID.setDisabledTextColor(new java.awt.Color(0, 0, 0));
+        jTextFieldEmployeeID.setEnabled(false);
+        jTextFieldEmployeeID.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jTextFieldEmployeeNumberActionPerformed(evt);
+                jTextFieldEmployeeIDActionPerformed(evt);
             }
         });
-        jPanelProfileBox.add(jTextFieldEmployeeNumber);
-        jTextFieldEmployeeNumber.setBounds(180, 130, 340, 40);
+        jPanelProfileBox.add(jTextFieldEmployeeID);
+        jTextFieldEmployeeID.setBounds(180, 130, 340, 40);
 
         jLabelEmployeeNumber.setBackground(new java.awt.Color(255, 255, 255));
         jLabelEmployeeNumber.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         jLabelEmployeeNumber.setForeground(new java.awt.Color(0, 0, 0));
         jLabelEmployeeNumber.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        jLabelEmployeeNumber.setText("Employee # :");
+        jLabelEmployeeNumber.setText("Employee ID :");
         jPanelProfileBox.add(jLabelEmployeeNumber);
         jLabelEmployeeNumber.setBounds(30, 130, 290, 40);
 
@@ -352,6 +394,7 @@ public class ProfilePanel extends javax.swing.JPanel {
         jTextAreaAddress.setColumns(20);
         jTextAreaAddress.setLineWrap(true);
         jTextAreaAddress.setRows(5);
+        jTextAreaAddress.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextAreaAddress.setEnabled(false);
         jScrollPane1.setViewportView(jTextAreaAddress);
 
@@ -374,7 +417,7 @@ public class ProfilePanel extends javax.swing.JPanel {
         jPanelProfileBox.add(jLabelSemiMonthlyRate);
         jLabelSemiMonthlyRate.setBounds(550, 370, 270, 40);
 
-        jTextFieldBasicSalary.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldBasicSalary.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldBasicSalary.setEnabled(false);
         jTextFieldBasicSalary.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -400,7 +443,7 @@ public class ProfilePanel extends javax.swing.JPanel {
         jPanelProfileBox.add(jLabelRole);
         jLabelRole.setBounds(30, 530, 290, 40);
 
-        jTextFieldFirstName.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldFirstName.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldFirstName.setEnabled(false);
         jTextFieldFirstName.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -410,7 +453,7 @@ public class ProfilePanel extends javax.swing.JPanel {
         jPanelProfileBox.add(jTextFieldFirstName);
         jTextFieldFirstName.setBounds(180, 210, 340, 40);
 
-        jTextFieldSupervisor.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldSupervisor.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldSupervisor.setEnabled(false);
         jTextFieldSupervisor.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -420,7 +463,7 @@ public class ProfilePanel extends javax.swing.JPanel {
         jPanelProfileBox.add(jTextFieldSupervisor);
         jTextFieldSupervisor.setBounds(700, 130, 330, 40);
 
-        jTextFieldBirthday.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldBirthday.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldBirthday.setEnabled(false);
         jTextFieldBirthday.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -430,7 +473,7 @@ public class ProfilePanel extends javax.swing.JPanel {
         jPanelProfileBox.add(jTextFieldBirthday);
         jTextFieldBirthday.setBounds(180, 290, 340, 40);
 
-        jTextFieldWorkStatus.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldWorkStatus.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldWorkStatus.setEnabled(false);
         jTextFieldWorkStatus.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -440,7 +483,7 @@ public class ProfilePanel extends javax.swing.JPanel {
         jPanelProfileBox.add(jTextFieldWorkStatus);
         jTextFieldWorkStatus.setBounds(180, 410, 340, 40);
 
-        jTextFieldDepartment.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldDepartment.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldDepartment.setEnabled(false);
         jTextFieldDepartment.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -450,7 +493,7 @@ public class ProfilePanel extends javax.swing.JPanel {
         jPanelProfileBox.add(jTextFieldDepartment);
         jTextFieldDepartment.setBounds(180, 450, 340, 40);
 
-        jTextFieldPosition.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldPosition.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldPosition.setEnabled(false);
         jTextFieldPosition.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -460,7 +503,7 @@ public class ProfilePanel extends javax.swing.JPanel {
         jPanelProfileBox.add(jTextFieldPosition);
         jTextFieldPosition.setBounds(180, 490, 340, 40);
 
-        jTextFieldRole.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldRole.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldRole.setEnabled(false);
         jTextFieldRole.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -470,7 +513,7 @@ public class ProfilePanel extends javax.swing.JPanel {
         jPanelProfileBox.add(jTextFieldRole);
         jTextFieldRole.setBounds(180, 530, 340, 40);
 
-        jTextFieldGender.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldGender.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldGender.setEnabled(false);
         jTextFieldGender.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -542,9 +585,9 @@ public class ProfilePanel extends javax.swing.JPanel {
         // TODO add your handling code here:
     }//GEN-LAST:event_jTextFieldLastNameActionPerformed
 
-    private void jTextFieldEmployeeNumberActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldEmployeeNumberActionPerformed
+    private void jTextFieldEmployeeIDActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldEmployeeIDActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jTextFieldEmployeeNumberActionPerformed
+    }//GEN-LAST:event_jTextFieldEmployeeIDActionPerformed
 
     private void jTextFieldBasicSalaryActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldBasicSalaryActionPerformed
         // TODO add your handling code here:
@@ -622,7 +665,7 @@ public class ProfilePanel extends javax.swing.JPanel {
     private javax.swing.JTextField jTextFieldBirthday;
     private javax.swing.JTextField jTextFieldClothingAllowance;
     private javax.swing.JTextField jTextFieldDepartment;
-    private javax.swing.JTextField jTextFieldEmployeeNumber;
+    private javax.swing.JTextField jTextFieldEmployeeID;
     private javax.swing.JTextField jTextFieldFirstName;
     private javax.swing.JTextField jTextFieldGender;
     private javax.swing.JTextField jTextFieldHourlyRate;

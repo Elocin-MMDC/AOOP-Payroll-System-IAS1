@@ -3,7 +3,6 @@ package model.pojo;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-
 public class Employee {
     private int employeeID;
     private String lastName;
@@ -16,12 +15,12 @@ public class Employee {
     private int positionID;
     private int govID;
     private int salaryID;
-    private Integer supervisorID; // nullable
+    private Integer supervisorID;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private boolean isDeleted;
-    private LocalDateTime deletedAt; // nullable
-
+    private LocalDateTime deletedAt;
+    
     public Employee(int employeeID, String lastName, String firstName, LocalDate birthday, String phoneNumber, int genderID, int addressID, int workStatusID, int positionID, int govID, int salaryID, Integer supervisorID, LocalDateTime createdAt, LocalDateTime updatedAt, boolean isDeleted, LocalDateTime deletedAt) {
         this.employeeID = employeeID;
         this.lastName = lastName;
@@ -39,6 +38,10 @@ public class Employee {
         this.updatedAt = updatedAt;
         this.isDeleted = isDeleted;
         this.deletedAt = deletedAt;
+    }
+    
+    public Employee() {
+        
     }
 
     public int getEmployeeID() {
@@ -168,5 +171,5 @@ public class Employee {
     public void setDeletedAt(LocalDateTime deletedAt) {
         this.deletedAt = deletedAt;
     }
-
+    
 }

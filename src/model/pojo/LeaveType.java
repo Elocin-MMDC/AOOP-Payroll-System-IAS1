@@ -1,6 +1,5 @@
 package model.pojo;
 
-
 public class LeaveType {
     private int leaveTypeID;
     private String leaveName;
@@ -10,6 +9,10 @@ public class LeaveType {
         this.leaveTypeID = leaveTypeID;
         this.leaveName = leaveName;
         this.entitlementDays = entitlementDays;
+    }
+
+    public LeaveType() {
+        
     }
 
     public int getLeaveTypeID() {

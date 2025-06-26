@@ -1,14 +1,78 @@
 package gui.admin.hr;
 
 import java.awt.CardLayout;
+import java.util.List;
+import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
+import model.pojo.Attendance;
+import service.AttendanceService;
+import util.UIUtil;
 
 public class AttendancePanel extends javax.swing.JPanel {
 
     private final AdminHRPortal hrPortal;
+    private final AttendanceService attendanceService;
     
     public AttendancePanel(AdminHRPortal hrPortal) {
         this.hrPortal = hrPortal;
+        this.attendanceService = new AttendanceService();
         initComponents();
+        UIUtil.setGreeting(jLabelHelloAdmin, "Admin");
+        loadAttendanceHistory();
+    }
+    
+    public final void loadAttendanceHistory() {
+        List<Attendance> records = attendanceService.getAllRecords();
+
+        String[] cols = {
+            "Attendance ID",
+            "Attendance Date",
+            "Employee ID",
+            "Clock In",
+            "Clock Out",
+            "Regular Hours",
+            "Overtime Hours",
+            "Status"
+        };
+
+        UIUtil.styleTable(jTableAttendanceRecords, cols);
+
+        DefaultTableModel model = (DefaultTableModel) jTableAttendanceRecords.getModel();
+        model.setRowCount(0);
+        
+        for (Attendance a : records) {
+            model.addRow(new Object[]{
+                a.getAttendanceID(),
+                a.getDate(),
+                a.getEmployeeID(),
+                a.getClockIn(),
+                a.getClockOut(),
+                a.getRegularHours(),
+                a.getOvertimeHours(),
+                a.getStatus()
+            });
+        }
+
+        UIUtil.installSearchFilter(jTableAttendanceRecords, jTextFieldSearch, 0, 1, 2, 3, 4, 5, 6, 7);
+    }
+    
+    private void onViewClicked() {
+        int row = jTableAttendanceRecords.getSelectedRow();
+        if (row < 0) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Please select an attendance record to view.",
+                    "No Selection",
+                    JOptionPane.WARNING_MESSAGE
+            );
+            return;
+        }
+
+        int attendanceID = (int) jTableAttendanceRecords.getValueAt(row, 0);
+        hrPortal.getViewAttendancePanel().loadSelectedAttendance(attendanceID);
+
+        CardLayout cardLayout = (CardLayout) hrPortal.getPanelParentCard().getLayout();
+        cardLayout.show(hrPortal.getPanelParentCard(), "ViewAttendance");
     }
 
     @SuppressWarnings("unchecked")
@@ -19,13 +83,12 @@ public class AttendancePanel extends javax.swing.JPanel {
         jLabelHelloAdmin = new javax.swing.JLabel();
         jLabelAttendanceSmall = new javax.swing.JLabel();
         jPanelRecordsBox = new javax.swing.JPanel();
-        jLabelSeachByEmployeeID = new javax.swing.JLabel();
         jButtonView = new javax.swing.JButton();
-        jTextFieldSearchById = new javax.swing.JTextField();
         jLabelAttendanceRecords = new javax.swing.JLabel();
         jScrollPane1 = new javax.swing.JScrollPane();
-        jTableEmployeeRecords = new javax.swing.JTable();
-        jComboBoxSearchByStatus = new javax.swing.JComboBox<>();
+        jTableAttendanceRecords = new javax.swing.JTable();
+        jTextFieldSearch = new javax.swing.JTextField();
+        jLabelSeach = new javax.swing.JLabel();
 
         setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
@@ -39,7 +102,7 @@ public class AttendancePanel extends javax.swing.JPanel {
         jLabelHelloAdmin.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         jLabelHelloAdmin.setText("Hello, Admin!");
         jPanel1.add(jLabelHelloAdmin);
-        jLabelHelloAdmin.setBounds(30, 30, 137, 29);
+        jLabelHelloAdmin.setBounds(30, 30, 580, 29);
 
         jLabelAttendanceSmall.setText("Attendance");
         jPanel1.add(jLabelAttendanceSmall);
@@ -48,14 +111,6 @@ public class AttendancePanel extends javax.swing.JPanel {
         jPanelRecordsBox.setBackground(new java.awt.Color(255, 255, 255));
         jPanelRecordsBox.setBorder(javax.swing.BorderFactory.createTitledBorder(""));
         jPanelRecordsBox.setLayout(null);
-
-        jLabelSeachByEmployeeID.setBackground(new java.awt.Color(255, 255, 255));
-        jLabelSeachByEmployeeID.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
-        jLabelSeachByEmployeeID.setForeground(new java.awt.Color(0, 0, 0));
-        jLabelSeachByEmployeeID.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        jLabelSeachByEmployeeID.setText("Search by Employee ID :");
-        jPanelRecordsBox.add(jLabelSeachByEmployeeID);
-        jLabelSeachByEmployeeID.setBounds(20, 30, 180, 40);
 
         jButtonView.setBackground(new java.awt.Color(0, 43, 89));
         jButtonView.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
@@ -69,20 +124,6 @@ public class AttendancePanel extends javax.swing.JPanel {
         jPanelRecordsBox.add(jButtonView);
         jButtonView.setBounds(870, 580, 170, 40);
 
-        jTextFieldSearchById.setDisabledTextColor(new java.awt.Color(255, 255, 255));
-        jTextFieldSearchById.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jTextFieldSearchByIdActionPerformed(evt);
-            }
-        });
-        jTextFieldSearchById.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyPressed(java.awt.event.KeyEvent evt) {
-                jTextFieldSearchByIdKeyPressed(evt);
-            }
-        });
-        jPanelRecordsBox.add(jTextFieldSearchById);
-        jTextFieldSearchById.setBounds(200, 30, 260, 40);
-
         jLabelAttendanceRecords.setBackground(new java.awt.Color(255, 255, 255));
         jLabelAttendanceRecords.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         jLabelAttendanceRecords.setForeground(new java.awt.Color(0, 0, 0));
@@ -91,8 +132,8 @@ public class AttendancePanel extends javax.swing.JPanel {
         jPanelRecordsBox.add(jLabelAttendanceRecords);
         jLabelAttendanceRecords.setBounds(20, 90, 210, 40);
 
-        jTableEmployeeRecords.setAutoCreateRowSorter(true);
-        jTableEmployeeRecords.setModel(new javax.swing.table.DefaultTableModel(
+        jTableAttendanceRecords.setAutoCreateRowSorter(true);
+        jTableAttendanceRecords.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
                 {null, null, null, null, null, null, null, null},
                 {null, null, null, null, null, null, null, null},
@@ -144,25 +185,37 @@ public class AttendancePanel extends javax.swing.JPanel {
                 return canEdit [columnIndex];
             }
         });
-        jTableEmployeeRecords.setFocusable(false);
-        jTableEmployeeRecords.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
-        jTableEmployeeRecords.setShowGrid(true);
-        jTableEmployeeRecords.getTableHeader().setResizingAllowed(false);
-        jTableEmployeeRecords.getTableHeader().setReorderingAllowed(false);
-        jScrollPane1.setViewportView(jTableEmployeeRecords);
+        jTableAttendanceRecords.setFocusable(false);
+        jTableAttendanceRecords.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        jTableAttendanceRecords.setShowGrid(true);
+        jTableAttendanceRecords.getTableHeader().setResizingAllowed(false);
+        jTableAttendanceRecords.getTableHeader().setReorderingAllowed(false);
+        jScrollPane1.setViewportView(jTableAttendanceRecords);
 
         jPanelRecordsBox.add(jScrollPane1);
         jScrollPane1.setBounds(20, 130, 1020, 420);
 
-        jComboBoxSearchByStatus.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        jComboBoxSearchByStatus.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Select", "Late", "On-time" }));
-        jComboBoxSearchByStatus.addActionListener(new java.awt.event.ActionListener() {
+        jTextFieldSearch.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldSearch.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jComboBoxSearchByStatusActionPerformed(evt);
+                jTextFieldSearchActionPerformed(evt);
             }
         });
-        jPanelRecordsBox.add(jComboBoxSearchByStatus);
-        jComboBoxSearchByStatus.setBounds(780, 30, 260, 40);
+        jTextFieldSearch.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                jTextFieldSearchKeyPressed(evt);
+            }
+        });
+        jPanelRecordsBox.add(jTextFieldSearch);
+        jTextFieldSearch.setBounds(100, 30, 260, 40);
+
+        jLabelSeach.setBackground(new java.awt.Color(255, 255, 255));
+        jLabelSeach.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        jLabelSeach.setForeground(new java.awt.Color(0, 0, 0));
+        jLabelSeach.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        jLabelSeach.setText("Search :");
+        jPanelRecordsBox.add(jLabelSeach);
+        jLabelSeach.setBounds(20, 30, 80, 40);
 
         jPanel1.add(jPanelRecordsBox);
         jPanelRecordsBox.setBounds(30, 100, 1060, 650);
@@ -172,33 +225,27 @@ public class AttendancePanel extends javax.swing.JPanel {
 
     private void jButtonViewActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonViewActionPerformed
         // TODO add your handling code here:
-        CardLayout cardLayout = (CardLayout) hrPortal.getPanelParentCard().getLayout();
-        cardLayout.show(hrPortal.getPanelParentCard(), "ViewAttendance");
+        onViewClicked();
     }//GEN-LAST:event_jButtonViewActionPerformed
 
-    private void jTextFieldSearchByIdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldSearchByIdActionPerformed
+    private void jTextFieldSearchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldSearchActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jTextFieldSearchByIdActionPerformed
+    }//GEN-LAST:event_jTextFieldSearchActionPerformed
 
-    private void jTextFieldSearchByIdKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTextFieldSearchByIdKeyPressed
+    private void jTextFieldSearchKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTextFieldSearchKeyPressed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jTextFieldSearchByIdKeyPressed
-
-    private void jComboBoxSearchByStatusActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxSearchByStatusActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jComboBoxSearchByStatusActionPerformed
+    }//GEN-LAST:event_jTextFieldSearchKeyPressed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButtonView;
-    private javax.swing.JComboBox<String> jComboBoxSearchByStatus;
     private javax.swing.JLabel jLabelAttendanceRecords;
     private javax.swing.JLabel jLabelAttendanceSmall;
     private javax.swing.JLabel jLabelHelloAdmin;
-    private javax.swing.JLabel jLabelSeachByEmployeeID;
+    private javax.swing.JLabel jLabelSeach;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanelRecordsBox;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JTable jTableEmployeeRecords;
-    private javax.swing.JTextField jTextFieldSearchById;
+    private javax.swing.JTable jTableAttendanceRecords;
+    private javax.swing.JTextField jTextFieldSearch;
     // End of variables declaration//GEN-END:variables
 }

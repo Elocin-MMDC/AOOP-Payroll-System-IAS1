@@ -1,6 +1,5 @@
 package model.pojo;
 
-
 public class Gender {
     private int genderID;
     private String genderName;
@@ -8,6 +7,9 @@ public class Gender {
     public Gender(int genderID, String genderName) {
         this.genderID = genderID;
         this.genderName = genderName;
+    }
+
+    public Gender() {
     }
 
     public int getGenderID() {

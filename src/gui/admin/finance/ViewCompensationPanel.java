@@ -1,16 +1,52 @@
 package gui.admin.finance;
 
 import java.awt.CardLayout;
+import model.pojo.EmployeeView;
+import service.EmployeeService;
+import util.UIUtil;
 
 public class ViewCompensationPanel extends javax.swing.JPanel {
 
     private final AdminFinancePortal financePortal;
+    private final EmployeeService employeeService;
     
     public ViewCompensationPanel(AdminFinancePortal financePortal) {
         this.financePortal = financePortal;
+        this.employeeService = new EmployeeService();
         initComponents();
+        UIUtil.setGreeting(jLabelHelloAdmin, "Admin");
     }
 
+    public void loadSelectedEmployee(int empId) {
+        EmployeeView e = employeeService.getEmployeeById(empId);
+        if (e == null) {
+            return;
+        }
+
+        // Basic info
+        jTextFieldEmployeeID.setText(String.valueOf(e.getEmployeeID()));
+        jTextFieldLastName.setText(e.getLastName());
+        jTextFieldFirstName.setText(e.getFirstName());
+        jTextFieldWorkStatus.setText(e.getWorkStatus());
+        jTextFieldRole.setText(e.getRole());
+        jTextFieldPosition.setText(e.getPositionTitle());
+        jTextFieldDepartment.setText(e.getDepartmentName());
+        jTextFieldSupervisor.setText(e.getSupervisorName());
+    
+        // GovInfo
+        jTextFieldSssNumber.setText(e.getSssNumber());
+        jTextFieldPhilHealthNumber.setText(e.getPhilHealthNumber());
+        jTextFieldTin.setText(e.getTin());
+        jTextFieldPagIbigNumber.setText(e.getPagIbigNumber());
+
+        // Compensation
+        jTextFieldBasicSalary.setText(e.getBasicSalary().toString());
+        jTextFieldSemiMonthlyRate.setText(e.getSemiMonthlyRate().toString());
+        jTextFieldHourlyRate.setText(e.getHourlyRate().toString());
+        jTextFieldRiceSubsidy.setText(e.getRiceSubsidy().toString());
+        jTextFieldPhoneAllowance.setText(e.getPhoneAllowance().toString());
+        jTextFieldClothingAllowance.setText(e.getClothingAllowance().toString());
+    }
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
@@ -69,7 +105,7 @@ public class ViewCompensationPanel extends javax.swing.JPanel {
         jLabelHelloAdmin.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         jLabelHelloAdmin.setText("Hello, Admin!");
         jPanel1.add(jLabelHelloAdmin);
-        jLabelHelloAdmin.setBounds(30, 30, 137, 29);
+        jLabelHelloAdmin.setBounds(30, 30, 560, 29);
 
         jLabelCompensationSmall.setText("Compensation > View Record");
         jPanel1.add(jLabelCompensationSmall);
@@ -223,8 +259,8 @@ public class ViewCompensationPanel extends javax.swing.JPanel {
         jPanelCompensationBox.add(jLabelClothingAllowance);
         jLabelClothingAllowance.setBounds(560, 430, 270, 40);
 
-        jTextFieldSssNumber.setBackground(new java.awt.Color(250, 250, 250));
-        jTextFieldSssNumber.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldSssNumber.setBackground(new java.awt.Color(240, 240, 240));
+        jTextFieldSssNumber.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldSssNumber.setEnabled(false);
         jTextFieldSssNumber.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -234,7 +270,8 @@ public class ViewCompensationPanel extends javax.swing.JPanel {
         jPanelCompensationBox.add(jTextFieldSssNumber);
         jTextFieldSssNumber.setBounds(710, 110, 330, 40);
 
-        jTextFieldPhilHealthNumber.setBackground(new java.awt.Color(250, 250, 250));
+        jTextFieldPhilHealthNumber.setBackground(new java.awt.Color(240, 240, 240));
+        jTextFieldPhilHealthNumber.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldPhilHealthNumber.setEnabled(false);
         jTextFieldPhilHealthNumber.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -244,8 +281,8 @@ public class ViewCompensationPanel extends javax.swing.JPanel {
         jPanelCompensationBox.add(jTextFieldPhilHealthNumber);
         jTextFieldPhilHealthNumber.setBounds(710, 150, 330, 40);
 
-        jTextFieldTin.setBackground(new java.awt.Color(250, 250, 250));
-        jTextFieldTin.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldTin.setBackground(new java.awt.Color(240, 240, 240));
+        jTextFieldTin.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldTin.setEnabled(false);
         jTextFieldTin.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -255,7 +292,8 @@ public class ViewCompensationPanel extends javax.swing.JPanel {
         jPanelCompensationBox.add(jTextFieldTin);
         jTextFieldTin.setBounds(170, 430, 350, 40);
 
-        jTextFieldPagIbigNumber.setBackground(new java.awt.Color(250, 250, 250));
+        jTextFieldPagIbigNumber.setBackground(new java.awt.Color(240, 240, 240));
+        jTextFieldPagIbigNumber.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldPagIbigNumber.setEnabled(false);
         jTextFieldPagIbigNumber.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -265,8 +303,8 @@ public class ViewCompensationPanel extends javax.swing.JPanel {
         jPanelCompensationBox.add(jTextFieldPagIbigNumber);
         jTextFieldPagIbigNumber.setBounds(710, 190, 330, 40);
 
-        jTextFieldSemiMonthlyRate.setBackground(new java.awt.Color(250, 250, 250));
-        jTextFieldSemiMonthlyRate.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldSemiMonthlyRate.setBackground(new java.awt.Color(240, 240, 240));
+        jTextFieldSemiMonthlyRate.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldSemiMonthlyRate.setEnabled(false);
         jTextFieldSemiMonthlyRate.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -276,7 +314,8 @@ public class ViewCompensationPanel extends javax.swing.JPanel {
         jPanelCompensationBox.add(jTextFieldSemiMonthlyRate);
         jTextFieldSemiMonthlyRate.setBounds(710, 270, 330, 40);
 
-        jTextFieldHourlyRate.setBackground(new java.awt.Color(250, 250, 250));
+        jTextFieldHourlyRate.setBackground(new java.awt.Color(240, 240, 240));
+        jTextFieldHourlyRate.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldHourlyRate.setEnabled(false);
         jTextFieldHourlyRate.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -286,7 +325,8 @@ public class ViewCompensationPanel extends javax.swing.JPanel {
         jPanelCompensationBox.add(jTextFieldHourlyRate);
         jTextFieldHourlyRate.setBounds(710, 310, 330, 40);
 
-        jTextFieldBasicSalary.setBackground(new java.awt.Color(250, 250, 250));
+        jTextFieldBasicSalary.setBackground(new java.awt.Color(240, 240, 240));
+        jTextFieldBasicSalary.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldBasicSalary.setEnabled(false);
         jTextFieldBasicSalary.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -296,8 +336,8 @@ public class ViewCompensationPanel extends javax.swing.JPanel {
         jPanelCompensationBox.add(jTextFieldBasicSalary);
         jTextFieldBasicSalary.setBounds(710, 230, 330, 40);
 
-        jTextFieldSupervisor.setBackground(new java.awt.Color(250, 250, 250));
-        jTextFieldSupervisor.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldSupervisor.setBackground(new java.awt.Color(240, 240, 240));
+        jTextFieldSupervisor.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldSupervisor.setEnabled(false);
         jTextFieldSupervisor.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -307,7 +347,8 @@ public class ViewCompensationPanel extends javax.swing.JPanel {
         jPanelCompensationBox.add(jTextFieldSupervisor);
         jTextFieldSupervisor.setBounds(170, 390, 350, 40);
 
-        jTextFieldLastName.setBackground(new java.awt.Color(250, 250, 250));
+        jTextFieldLastName.setBackground(new java.awt.Color(240, 240, 240));
+        jTextFieldLastName.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldLastName.setEnabled(false);
         jTextFieldLastName.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -317,8 +358,8 @@ public class ViewCompensationPanel extends javax.swing.JPanel {
         jPanelCompensationBox.add(jTextFieldLastName);
         jTextFieldLastName.setBounds(170, 150, 350, 40);
 
-        jTextFieldFirstName.setBackground(new java.awt.Color(250, 250, 250));
-        jTextFieldFirstName.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldFirstName.setBackground(new java.awt.Color(240, 240, 240));
+        jTextFieldFirstName.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldFirstName.setEnabled(false);
         jTextFieldFirstName.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -338,8 +379,8 @@ public class ViewCompensationPanel extends javax.swing.JPanel {
         jPanelCompensationBox.add(jLabelBack);
         jLabelBack.setBounds(0, 560, 60, 60);
 
-        jTextFieldEmployeeID.setBackground(new java.awt.Color(250, 250, 250));
-        jTextFieldEmployeeID.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldEmployeeID.setBackground(new java.awt.Color(240, 240, 240));
+        jTextFieldEmployeeID.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldEmployeeID.setEnabled(false);
         jTextFieldEmployeeID.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -349,8 +390,8 @@ public class ViewCompensationPanel extends javax.swing.JPanel {
         jPanelCompensationBox.add(jTextFieldEmployeeID);
         jTextFieldEmployeeID.setBounds(170, 110, 350, 40);
 
-        jTextFieldWorkStatus.setBackground(new java.awt.Color(250, 250, 250));
-        jTextFieldWorkStatus.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldWorkStatus.setBackground(new java.awt.Color(240, 240, 240));
+        jTextFieldWorkStatus.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldWorkStatus.setEnabled(false);
         jTextFieldWorkStatus.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -360,8 +401,8 @@ public class ViewCompensationPanel extends javax.swing.JPanel {
         jPanelCompensationBox.add(jTextFieldWorkStatus);
         jTextFieldWorkStatus.setBounds(170, 230, 350, 40);
 
-        jTextFieldDepartment.setBackground(new java.awt.Color(250, 250, 250));
-        jTextFieldDepartment.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldDepartment.setBackground(new java.awt.Color(240, 240, 240));
+        jTextFieldDepartment.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldDepartment.setEnabled(false);
         jTextFieldDepartment.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -371,8 +412,8 @@ public class ViewCompensationPanel extends javax.swing.JPanel {
         jPanelCompensationBox.add(jTextFieldDepartment);
         jTextFieldDepartment.setBounds(170, 270, 350, 40);
 
-        jTextFieldPosition.setBackground(new java.awt.Color(250, 250, 250));
-        jTextFieldPosition.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldPosition.setBackground(new java.awt.Color(240, 240, 240));
+        jTextFieldPosition.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldPosition.setEnabled(false);
         jTextFieldPosition.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -382,8 +423,8 @@ public class ViewCompensationPanel extends javax.swing.JPanel {
         jPanelCompensationBox.add(jTextFieldPosition);
         jTextFieldPosition.setBounds(170, 310, 350, 40);
 
-        jTextFieldRole.setBackground(new java.awt.Color(250, 250, 250));
-        jTextFieldRole.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldRole.setBackground(new java.awt.Color(240, 240, 240));
+        jTextFieldRole.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldRole.setEnabled(false);
         jTextFieldRole.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -393,7 +434,8 @@ public class ViewCompensationPanel extends javax.swing.JPanel {
         jPanelCompensationBox.add(jTextFieldRole);
         jTextFieldRole.setBounds(170, 350, 350, 40);
 
-        jTextFieldPhoneAllowance.setBackground(new java.awt.Color(250, 250, 250));
+        jTextFieldPhoneAllowance.setBackground(new java.awt.Color(240, 240, 240));
+        jTextFieldPhoneAllowance.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldPhoneAllowance.setEnabled(false);
         jTextFieldPhoneAllowance.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -403,7 +445,8 @@ public class ViewCompensationPanel extends javax.swing.JPanel {
         jPanelCompensationBox.add(jTextFieldPhoneAllowance);
         jTextFieldPhoneAllowance.setBounds(710, 390, 330, 40);
 
-        jTextFieldClothingAllowance.setBackground(new java.awt.Color(250, 250, 250));
+        jTextFieldClothingAllowance.setBackground(new java.awt.Color(240, 240, 240));
+        jTextFieldClothingAllowance.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldClothingAllowance.setEnabled(false);
         jTextFieldClothingAllowance.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -413,7 +456,8 @@ public class ViewCompensationPanel extends javax.swing.JPanel {
         jPanelCompensationBox.add(jTextFieldClothingAllowance);
         jTextFieldClothingAllowance.setBounds(710, 430, 330, 40);
 
-        jTextFieldRiceSubsidy.setBackground(new java.awt.Color(250, 250, 250));
+        jTextFieldRiceSubsidy.setBackground(new java.awt.Color(240, 240, 240));
+        jTextFieldRiceSubsidy.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldRiceSubsidy.setEnabled(false);
         jTextFieldRiceSubsidy.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {

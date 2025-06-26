@@ -5,7 +5,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
-
 public class Attendance {
     private int attendanceID;
     private int employeeID;
@@ -14,7 +13,7 @@ public class Attendance {
     private LocalTime clockOut;
     private BigDecimal regularHours;
     private BigDecimal overtimeHours;
-    private String status; // "On-time" or "Late"
+    private String status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -29,6 +28,10 @@ public class Attendance {
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+    }
+
+    public Attendance() {
+        
     }
 
     public int getAttendanceID() {

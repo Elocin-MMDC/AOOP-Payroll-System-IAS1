@@ -1,39 +1,25 @@
 package gui.login;
 
-import java.awt.Image;
-import java.awt.Toolkit;
 import javax.swing.JPanel;
+import util.UIUtil;
 
 public class LoginPortal extends javax.swing.JFrame {
+    
     private final LoginPanel loginPanel;
     private final ForgotPasswordPanel forgotPasswordPanel;
 
     public LoginPortal() {
-        setFlatLafUI();
+        UIUtil.setFlatLafUI();
         this.setTitle("MotorPH Login Portal");
-        setWindowIcon();
+        setLoginWindowIcon();
         loginPanel = new LoginPanel(this);
         forgotPasswordPanel = new ForgotPasswordPanel(this);
         initComponents();
         addPanels();
         this.setLocationRelativeTo(null);
     }
-    
-    private void setFlatLafUI() {
-        try {
-            com.formdev.flatlaf.FlatIntelliJLaf.setup();
-        } catch (Exception ex) {
-            System.err.println("Failed to initialize FlatLaf.");
-        }
-    }
-    
-    private void setWindowIcon() {
-        try {
-            Image icon = Toolkit.getDefaultToolkit().getImage(getClass().getResource("/images/title-bluegreen-motor-logo.png"));
-            this.setIconImage(icon);
-        } catch (Exception e) {
-            System.err.println("Icon image not found.");
-        }
+    private void setLoginWindowIcon() {
+        UIUtil.setWindowIcon(this, "/images/title-bluegreen-motor-logo.png");
     }
     
     public JPanel getPanelParentCard() {

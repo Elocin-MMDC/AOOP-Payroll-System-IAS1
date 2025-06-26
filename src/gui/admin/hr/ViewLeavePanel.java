@@ -1,14 +1,170 @@
 package gui.admin.hr;
 
 import java.awt.CardLayout;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import javax.swing.table.DefaultTableModel;
+import model.pojo.EmployeeView;
+import model.pojo.LeaveBalance;
+import model.pojo.LeaveRequest;
+import model.pojo.LeaveType;
+import service.RequestService;
+import util.UIUtil;
 
 public class ViewLeavePanel extends javax.swing.JPanel {
     
     private final AdminHRPortal hrPortal;
+    private final RequestService requestService;
 
     public ViewLeavePanel(AdminHRPortal hrPortal) {
         this.hrPortal = hrPortal;
+        this.requestService = new RequestService();
         initComponents();
+        UIUtil.setGreeting(jLabelHelloAdmin, "Admin");
+    }
+    
+    protected void loadSelectedLeave(int leaveID) {
+        LeaveRequest lr = requestService.getLeaveDetails(leaveID);
+        if (lr == null) {
+            return;
+        }
+
+        EmployeeView efd = requestService.getEmployeeDetails(lr.getEmployeeID());
+
+        jTextFieldLeaveID.setText(String.valueOf(lr.getLeaveID()));
+        jTextFieldRequestDate.setText(lr.getDate().toString());
+        jTextFieldEmployeeID.setText(String.valueOf(lr.getEmployeeID()));
+        jTextFieldFullName.setText(efd.getFirstName() + " " + efd.getLastName());
+        jTextFieldPosition.setText(efd.getPositionTitle());
+        jTextFieldDepartment.setText(efd.getDepartmentName());
+        jTextFieldSupervisor.setText(efd.getSupervisorName());
+        jTextFieldStartDate.setText(lr.getStartDate().toString());
+        jTextFieldEndDate.setText(lr.getEndDate().toString());
+        jTextFieldLeaveDays.setText(String.valueOf(lr.getLeaveDays()));
+
+        String leaveTypeName = requestService.getLeaveTypes().stream()
+                .filter(t -> t.getLeaveTypeID() == lr.getLeaveTypeID())
+                .map(LeaveType::getLeaveName)
+                .findFirst()
+                .orElse("");
+
+        jTextFieldLeaveType.setText(leaveTypeName);
+        jTextAreaReason.setText(lr.getReason());
+
+        if (lr.getApprovedBy() != null) {
+            String approverName = requestService.getUserFullName(lr.getApprovedBy());
+            jTextFieldApprovedBy.setText(approverName);
+        } else {
+            jTextFieldApprovedBy.setText("");
+        }
+
+        jTextFieldStatus.setText(lr.getStatus());
+    }
+    
+    protected void loadEmployeeLeaveBalance(int empId) {
+        List<LeaveBalance> balances = requestService.getLeaveBalances(empId);
+        EmployeeView e = requestService.getEmployeeDetails(empId);
+
+        String[] cols = {
+            "Leave Type",
+            "Entitled Days",
+            "Used Days",
+            "Remaining Days"
+        };
+
+        UIUtil.styleTable(jTableLeaveBalance, cols);
+
+        DefaultTableModel model = (DefaultTableModel) jTableLeaveBalance.getModel();
+        model.setRowCount(0);
+        
+        if ("Probationary".equalsIgnoreCase(e.getWorkStatus())) {
+            return;
+        }
+
+        Map<Integer, String> typeNames = requestService.getLeaveTypes().stream()
+                .collect(Collectors.toMap(LeaveType::getLeaveTypeID, LeaveType::getLeaveName));
+
+        for (LeaveBalance lb : balances) {
+            model.addRow(new Object[]{
+                typeNames.getOrDefault(lb.getLeaveTypeID(), ""),
+                lb.getEntitledDays(),
+                lb.getUsedDays(),
+                lb.getRemainingDays()
+            });
+        }
+    }
+    
+    private void approveLeave() {
+        try {
+            int leaveID = Integer.parseInt(jTextFieldLeaveID.getText());
+
+            LeaveRequest leave = requestService.getLeaveDetails(leaveID);
+            if (leave == null) {
+                UIUtil.showErrorMessage(this, "Leave request not found.", "Error");
+                return;
+            }
+            
+            EmployeeView e = requestService.getEmployeeDetails(leave.getEmployeeID());
+            if (!"Regular".equals(e.getWorkStatus())) {
+                UIUtil.showErrorMessage(this, "Only regular employees are entitled to any kind of leave", "Not eligible");
+                return;
+            }
+            
+            if (!"Pending".equals(leave.getStatus())) {
+                UIUtil.showErrorMessage(this, "Only pending requests can be approved.", "Validation Error");
+                return;
+            }
+            if (!UIUtil.showConfirmation(this, "Are you sure you want to approve this leave request?")) {
+                return;
+            }
+
+            requestService.approveLeaveRequest(leaveID);
+
+            // Refresh panels
+            loadSelectedLeave(leaveID);
+            hrPortal.getLeavesPanel().loadLeaveHistory();
+            hrPortal.getHRDashboardPanel().loadMetrics();
+            hrPortal.getViewLeavePanel().loadEmployeeLeaveBalance(leave.getEmployeeID());
+
+            UIUtil.showInfoMessage(this, "Leave request approved.", "Success");
+
+        } catch (NumberFormatException ex) {
+            UIUtil.showErrorMessage(this, "Invalid leave ID format.", "Input Error");
+        } catch (Exception ex) {
+            UIUtil.showErrorMessage(this, ex.getMessage(), "System Error");
+        }
+    }
+
+    private void rejectLeave() {
+        try {
+            int leaveID = Integer.parseInt(jTextFieldLeaveID.getText());
+
+            LeaveRequest leave = requestService.getLeaveDetails(leaveID);
+            if (leave == null) {
+                UIUtil.showErrorMessage(this, "Leave request not found.", "Error");
+                return;
+            }
+            if (!"Pending".equals(leave.getStatus())) {
+                UIUtil.showErrorMessage(this, "Only pending requests can be rejected.", "Validation Error");
+                return;
+            }
+            if (!UIUtil.showConfirmation(this, "Are you sure you want to reject this leave request?")) {
+                return;
+            }
+
+            requestService.rejectLeaveRequest(leaveID);
+
+            // Refresh panels
+            loadSelectedLeave(leaveID);
+            hrPortal.getLeavesPanel().loadLeaveHistory();
+            hrPortal.getHRDashboardPanel().loadMetrics();
+
+            UIUtil.showInfoMessage(this, "Leave request rejected.", "Success");
+
+        } catch (Exception ex) {
+            UIUtil.showErrorMessage(this, ex.getMessage(), "System Error");
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -67,7 +223,7 @@ public class ViewLeavePanel extends javax.swing.JPanel {
         jLabelHelloAdmin.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         jLabelHelloAdmin.setText("Hello, Admin!");
         jPanel1.add(jLabelHelloAdmin);
-        jLabelHelloAdmin.setBounds(30, 30, 137, 29);
+        jLabelHelloAdmin.setBounds(30, 30, 560, 29);
 
         jLabelViewRecordSmall.setText("Leaves > View Record");
         jPanel1.add(jLabelViewRecordSmall);
@@ -77,7 +233,7 @@ public class ViewLeavePanel extends javax.swing.JPanel {
         jPanelViewLeaveBox.setBorder(javax.swing.BorderFactory.createTitledBorder(""));
         jPanelViewLeaveBox.setLayout(null);
 
-        jTextFieldEmployeeID.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldEmployeeID.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldEmployeeID.setEnabled(false);
         jTextFieldEmployeeID.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -121,7 +277,7 @@ public class ViewLeavePanel extends javax.swing.JPanel {
         jPanelViewLeaveBox.add(jLabelLeaveID);
         jLabelLeaveID.setBounds(30, 50, 290, 40);
 
-        jTextFieldLeaveID.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldLeaveID.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldLeaveID.setEnabled(false);
         jTextFieldLeaveID.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -139,7 +295,7 @@ public class ViewLeavePanel extends javax.swing.JPanel {
         jPanelViewLeaveBox.add(jLabelRequestDate);
         jLabelRequestDate.setBounds(30, 90, 290, 40);
 
-        jTextFieldRequestDate.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldRequestDate.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldRequestDate.setEnabled(false);
         jTextFieldRequestDate.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -149,6 +305,7 @@ public class ViewLeavePanel extends javax.swing.JPanel {
         jPanelViewLeaveBox.add(jTextFieldRequestDate);
         jTextFieldRequestDate.setBounds(180, 90, 350, 40);
 
+        jTextFieldFullName.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldFullName.setEnabled(false);
         jTextFieldFullName.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -166,6 +323,7 @@ public class ViewLeavePanel extends javax.swing.JPanel {
         jPanelViewLeaveBox.add(jLabelStartDate);
         jLabelStartDate.setBounds(540, 50, 290, 40);
 
+        jTextFieldStartDate.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldStartDate.setEnabled(false);
         jTextFieldStartDate.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -183,6 +341,7 @@ public class ViewLeavePanel extends javax.swing.JPanel {
         jPanelViewLeaveBox.add(jLabelEndDate);
         jLabelEndDate.setBounds(540, 90, 290, 40);
 
+        jTextFieldEndDate.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldEndDate.setEnabled(false);
         jTextFieldEndDate.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -200,6 +359,7 @@ public class ViewLeavePanel extends javax.swing.JPanel {
         jPanelViewLeaveBox.add(jLabelLeaveDays);
         jLabelLeaveDays.setBounds(540, 130, 290, 40);
 
+        jTextFieldLeaveType.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldLeaveType.setEnabled(false);
         jTextFieldLeaveType.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -233,6 +393,7 @@ public class ViewLeavePanel extends javax.swing.JPanel {
         jPanelViewLeaveBox.add(jLabelPosition);
         jLabelPosition.setBounds(30, 210, 290, 40);
 
+        jTextFieldPosition.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldPosition.setEnabled(false);
         jTextFieldPosition.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -250,6 +411,7 @@ public class ViewLeavePanel extends javax.swing.JPanel {
         jPanelViewLeaveBox.add(jLabelDepartment);
         jLabelDepartment.setBounds(30, 250, 290, 40);
 
+        jTextFieldDepartment.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldDepartment.setEnabled(false);
         jTextFieldDepartment.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -267,6 +429,7 @@ public class ViewLeavePanel extends javax.swing.JPanel {
         jPanelViewLeaveBox.add(jLabelApprovedBy);
         jLabelApprovedBy.setBounds(540, 250, 290, 40);
 
+        jTextFieldApprovedBy.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldApprovedBy.setEnabled(false);
         jTextFieldApprovedBy.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -279,6 +442,7 @@ public class ViewLeavePanel extends javax.swing.JPanel {
         jTextAreaReason.setColumns(20);
         jTextAreaReason.setLineWrap(true);
         jTextAreaReason.setRows(5);
+        jTextAreaReason.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextAreaReason.setEnabled(false);
         jScrollPane1.setViewportView(jTextAreaReason);
 
@@ -317,6 +481,7 @@ public class ViewLeavePanel extends javax.swing.JPanel {
         jPanelViewLeaveBox.add(jLabelSupervisor);
         jLabelSupervisor.setBounds(30, 290, 290, 40);
 
+        jTextFieldSupervisor.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldSupervisor.setEnabled(false);
         jTextFieldSupervisor.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -334,6 +499,7 @@ public class ViewLeavePanel extends javax.swing.JPanel {
         jPanelViewLeaveBox.add(jLabelStatus);
         jLabelStatus.setBounds(540, 290, 290, 40);
 
+        jTextFieldStatus.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldStatus.setEnabled(false);
         jTextFieldStatus.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -343,6 +509,7 @@ public class ViewLeavePanel extends javax.swing.JPanel {
         jPanelViewLeaveBox.add(jTextFieldStatus);
         jTextFieldStatus.setBounds(690, 290, 350, 40);
 
+        jTextFieldLeaveDays.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldLeaveDays.setEnabled(false);
         jTextFieldLeaveDays.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -388,7 +555,7 @@ public class ViewLeavePanel extends javax.swing.JPanel {
         jScrollPane2.setViewportView(jTableLeaveBalance);
 
         jPanelViewLeaveBox.add(jScrollPane2);
-        jScrollPane2.setBounds(30, 400, 1010, 120);
+        jScrollPane2.setBounds(30, 400, 1010, 110);
 
         jLabelLeaveBalance.setBackground(new java.awt.Color(255, 255, 255));
         jLabelLeaveBalance.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
@@ -452,10 +619,12 @@ public class ViewLeavePanel extends javax.swing.JPanel {
 
     private void jButtonRejectActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonRejectActionPerformed
         // TODO add your handling code here:
+        rejectLeave();
     }//GEN-LAST:event_jButtonRejectActionPerformed
 
     private void jButtonApproveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonApproveActionPerformed
         // TODO add your handling code here:
+        approveLeave();
     }//GEN-LAST:event_jButtonApproveActionPerformed
 
     private void jTextFieldSupervisorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldSupervisorActionPerformed

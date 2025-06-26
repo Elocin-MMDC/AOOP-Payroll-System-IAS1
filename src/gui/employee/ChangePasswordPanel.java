@@ -1,6 +1,10 @@
 package gui.employee;
 
 import java.awt.CardLayout;
+import java.util.Arrays;
+import service.AuthenticationService;
+import util.Session;
+import util.UIUtil;
 
 public class ChangePasswordPanel extends javax.swing.JPanel {
     
@@ -9,6 +13,7 @@ public class ChangePasswordPanel extends javax.swing.JPanel {
     public ChangePasswordPanel(EmployeePortal employeePortal) {
         this.employeePortal = employeePortal;
         initComponents();
+        UIUtil.setGreeting(jLabelHelloEmployee, "Employee");
     }
 
     @SuppressWarnings("unchecked")
@@ -19,14 +24,14 @@ public class ChangePasswordPanel extends javax.swing.JPanel {
         jLabelHelloEmployee = new javax.swing.JLabel();
         jLabelProfileSmall = new javax.swing.JLabel();
         jPanelChangePasswordBox = new javax.swing.JPanel();
-        jTextFieldNewPassword = new javax.swing.JTextField();
-        jTextFieldCurrentPassword = new javax.swing.JTextField();
         jLabelCurrentPassword = new javax.swing.JLabel();
         jLabelNewPassword = new javax.swing.JLabel();
         jLabelConfirmNewPassword = new javax.swing.JLabel();
-        jTextFieldCofirmNewPassword = new javax.swing.JTextField();
         jButtonSubmit = new javax.swing.JButton();
         jLabelBack = new javax.swing.JLabel();
+        jPasswordFieldCurrentPassword = new javax.swing.JPasswordField();
+        jPasswordFieldCofirmNewPassword = new javax.swing.JPasswordField();
+        jPasswordFieldNewPassword = new javax.swing.JPasswordField();
 
         setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
@@ -40,7 +45,7 @@ public class ChangePasswordPanel extends javax.swing.JPanel {
         jLabelHelloEmployee.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         jLabelHelloEmployee.setText("Hello, Employee!");
         jPanel1.add(jLabelHelloEmployee);
-        jLabelHelloEmployee.setBounds(30, 30, 210, 29);
+        jLabelHelloEmployee.setBounds(30, 30, 640, 29);
 
         jLabelProfileSmall.setText("Profile > Change Password");
         jPanel1.add(jLabelProfileSmall);
@@ -49,23 +54,6 @@ public class ChangePasswordPanel extends javax.swing.JPanel {
         jPanelChangePasswordBox.setBackground(new java.awt.Color(255, 255, 255));
         jPanelChangePasswordBox.setBorder(javax.swing.BorderFactory.createTitledBorder(""));
         jPanelChangePasswordBox.setLayout(null);
-
-        jTextFieldNewPassword.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jTextFieldNewPasswordActionPerformed(evt);
-            }
-        });
-        jPanelChangePasswordBox.add(jTextFieldNewPassword);
-        jTextFieldNewPassword.setBounds(440, 200, 340, 40);
-
-        jTextFieldCurrentPassword.setDisabledTextColor(new java.awt.Color(255, 255, 255));
-        jTextFieldCurrentPassword.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jTextFieldCurrentPasswordActionPerformed(evt);
-            }
-        });
-        jPanelChangePasswordBox.add(jTextFieldCurrentPassword);
-        jTextFieldCurrentPassword.setBounds(440, 160, 340, 40);
 
         jLabelCurrentPassword.setBackground(new java.awt.Color(255, 255, 255));
         jLabelCurrentPassword.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
@@ -91,15 +79,6 @@ public class ChangePasswordPanel extends javax.swing.JPanel {
         jPanelChangePasswordBox.add(jLabelConfirmNewPassword);
         jLabelConfirmNewPassword.setBounds(260, 240, 290, 40);
 
-        jTextFieldCofirmNewPassword.setDisabledTextColor(new java.awt.Color(255, 255, 255));
-        jTextFieldCofirmNewPassword.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jTextFieldCofirmNewPasswordActionPerformed(evt);
-            }
-        });
-        jPanelChangePasswordBox.add(jTextFieldCofirmNewPassword);
-        jTextFieldCofirmNewPassword.setBounds(440, 240, 340, 40);
-
         jButtonSubmit.setBackground(new java.awt.Color(0, 135, 0));
         jButtonSubmit.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         jButtonSubmit.setForeground(new java.awt.Color(255, 255, 255));
@@ -122,28 +101,71 @@ public class ChangePasswordPanel extends javax.swing.JPanel {
         jPanelChangePasswordBox.add(jLabelBack);
         jLabelBack.setBounds(0, 560, 60, 60);
 
+        jPasswordFieldCurrentPassword.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jPasswordFieldCurrentPasswordActionPerformed(evt);
+            }
+        });
+        jPanelChangePasswordBox.add(jPasswordFieldCurrentPassword);
+        jPasswordFieldCurrentPassword.setBounds(440, 160, 340, 40);
+
+        jPasswordFieldCofirmNewPassword.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jPasswordFieldCofirmNewPasswordActionPerformed(evt);
+            }
+        });
+        jPanelChangePasswordBox.add(jPasswordFieldCofirmNewPassword);
+        jPasswordFieldCofirmNewPassword.setBounds(440, 240, 340, 40);
+
+        jPasswordFieldNewPassword.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jPasswordFieldNewPasswordActionPerformed(evt);
+            }
+        });
+        jPanelChangePasswordBox.add(jPasswordFieldNewPassword);
+        jPasswordFieldNewPassword.setBounds(440, 200, 340, 40);
+
         jPanel1.add(jPanelChangePasswordBox);
         jPanelChangePasswordBox.setBounds(30, 110, 1060, 640);
 
         add(jPanel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, -1, -1));
     }// </editor-fold>//GEN-END:initComponents
 
-    private void jTextFieldNewPasswordActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldNewPasswordActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jTextFieldNewPasswordActionPerformed
-
-    private void jTextFieldCurrentPasswordActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldCurrentPasswordActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jTextFieldCurrentPasswordActionPerformed
-
-    private void jTextFieldCofirmNewPasswordActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldCofirmNewPasswordActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jTextFieldCofirmNewPasswordActionPerformed
-
     private void jButtonSubmitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonSubmitActionPerformed
         // TODO add your handling code here:
-//        CardLayout cardLayout = (CardLayout) hrPortal.getPanelParentCard().getLayout();
-//        cardLayout.show(hrPortal.getPanelParentCard(), "CreateEmployee");
+        String current = new String(jPasswordFieldCurrentPassword.getPassword());
+        String next = new String(jPasswordFieldNewPassword.getPassword()).trim();
+        String confirm = new String(jPasswordFieldCofirmNewPassword.getPassword()).trim();
+
+        if (current.isEmpty() || next.isEmpty() || confirm.isEmpty()) {
+            UIUtil.showWarningMessage(this, "All password fields are required.", "Change Password");
+            return;
+        }
+
+        if (!next.equals(confirm)) {
+            UIUtil.showErrorMessage(this, "New password and confirmation do not match.", "Change Password");
+            return;
+        }
+
+        // Attempt to change
+        AuthenticationService authService = new AuthenticationService();
+        try {
+            int userId = Session.getCurrentUser().getUserID();
+            authService.changePassword(userId, current, next);
+            UIUtil.showInfoMessage(this, "Password changed successfully!", "Change Password");
+
+            // Clear fields
+            Arrays.fill(jPasswordFieldCurrentPassword.getPassword(), '\0');
+            Arrays.fill(jPasswordFieldNewPassword.getPassword(), '\0');
+            Arrays.fill(jPasswordFieldCofirmNewPassword.getPassword(), '\0');
+            
+            jPasswordFieldCurrentPassword.setText("");
+            jPasswordFieldNewPassword.setText("");
+            jPasswordFieldCofirmNewPassword.setText("");
+            
+        } catch (Exception ex) {
+            UIUtil.showErrorMessage(this, ex.getMessage(), "Change Password Failed");
+        }
     }//GEN-LAST:event_jButtonSubmitActionPerformed
 
     private void jLabelBackMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabelBackMouseClicked
@@ -151,6 +173,18 @@ public class ChangePasswordPanel extends javax.swing.JPanel {
         CardLayout cardLayout = (CardLayout) employeePortal.getPanelParentCard().getLayout();
         cardLayout.show(employeePortal.getPanelParentCard(), "Profile");
     }//GEN-LAST:event_jLabelBackMouseClicked
+
+    private void jPasswordFieldCurrentPasswordActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jPasswordFieldCurrentPasswordActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jPasswordFieldCurrentPasswordActionPerformed
+
+    private void jPasswordFieldCofirmNewPasswordActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jPasswordFieldCofirmNewPasswordActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jPasswordFieldCofirmNewPasswordActionPerformed
+
+    private void jPasswordFieldNewPasswordActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jPasswordFieldNewPasswordActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jPasswordFieldNewPasswordActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButtonSubmit;
@@ -162,8 +196,8 @@ public class ChangePasswordPanel extends javax.swing.JPanel {
     private javax.swing.JLabel jLabelProfileSmall;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanelChangePasswordBox;
-    private javax.swing.JTextField jTextFieldCofirmNewPassword;
-    private javax.swing.JTextField jTextFieldCurrentPassword;
-    private javax.swing.JTextField jTextFieldNewPassword;
+    private javax.swing.JPasswordField jPasswordFieldCofirmNewPassword;
+    private javax.swing.JPasswordField jPasswordFieldCurrentPassword;
+    private javax.swing.JPasswordField jPasswordFieldNewPassword;
     // End of variables declaration//GEN-END:variables
 }

@@ -2,17 +2,16 @@ package model.pojo;
 
 import java.time.LocalDateTime;
 
-
 public class AuditLog {
     private int auditID;
     private int userID;
     private LocalDateTime createdAt;
-    private String action;            // Could use enum: INSERT, UPDATE, DELETE
+    private String action;
     private String entityModified;
     private int entityID;
     private String attributeModified;
-    private String oldValue;          // nullable
-    private String newValue;          // nullable
+    private String oldValue;
+    private String newValue;
 
     public AuditLog(int auditID, int userID, LocalDateTime createdAt, String action, String entityModified, int entityID, String attributeModified, String oldValue, String newValue) {
         this.auditID = auditID;
@@ -24,6 +23,10 @@ public class AuditLog {
         this.attributeModified = attributeModified;
         this.oldValue = oldValue;
         this.newValue = newValue;
+    }
+
+    public AuditLog() {
+        
     }
 
     public int getAuditID() {

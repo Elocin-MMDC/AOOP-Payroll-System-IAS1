@@ -1,6 +1,5 @@
 package model.pojo;
 
-
 public class Positions {
     private int positionID;
     private String positionTitle;
@@ -10,6 +9,10 @@ public class Positions {
         this.positionID = positionID;
         this.positionTitle = positionTitle;
         this.departmentID = departmentID;
+    }
+
+    public Positions() {
+        
     }
 
     public int getPositionID() {

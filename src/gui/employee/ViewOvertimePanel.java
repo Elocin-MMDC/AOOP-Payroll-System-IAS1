@@ -1,14 +1,46 @@
 package gui.employee;
 
 import java.awt.CardLayout;
+import model.pojo.EmployeeView;
+import model.pojo.OvertimeRequest;
+import service.RequestService;
+import util.UIUtil;
 
 public class ViewOvertimePanel extends javax.swing.JPanel {
     
     private final EmployeePortal employeePortal;
+    private final RequestService requestService;
 
     public ViewOvertimePanel(EmployeePortal employeePortal) {
         this.employeePortal = employeePortal;
+        requestService = new RequestService();
         initComponents();
+        UIUtil.setGreeting(jLabelHelloEmployee, "Employee");
+    }
+    
+    public void loadSelectedOvertime(int overtimeID) {
+        OvertimeRequest or = requestService.getOvertimeDetails(overtimeID);
+        
+        if (or == null) {
+            return;
+        }
+
+        EmployeeView efd = requestService.getEmployeeDetails(or.getEmployeeID());
+
+        jTextFieldOvertimeRequestID.setText(String.valueOf(or.getOvertimeID()));
+        jTextFieldRequestDate.setText(or.getDate().toString());
+        jTextFieldEmployeeID.setText(String.valueOf(or.getEmployeeID()));
+        jTextFieldFullName.setText(efd.getFirstName() + " " + efd.getLastName());
+        jTextFieldPosition.setText(efd.getPositionTitle());
+        jTextFieldDepartment.setText(efd.getDepartmentName());
+        jTextFieldSupervisor.setText(efd.getSupervisorName());
+        jTextFieldOvertimeWorkDate.setText(or.getOvertimeWorkDate().toString());
+        jTextFieldOvertimeHours.setText(or.getOvertimeHours().toPlainString());
+        jTextAreaReason.setText(or.getReason());
+        jTextFieldApprovedBy.setText(
+                or.getApprovedBy() != null ? String.valueOf(or.getApprovedBy()) : ""
+        );
+        jTextFieldStatus.setText(or.getStatus());
     }
 
     @SuppressWarnings("unchecked")
@@ -29,7 +61,7 @@ public class ViewOvertimePanel extends javax.swing.JPanel {
         jTextFieldDepartment = new javax.swing.JTextField();
         jTextFieldPosition = new javax.swing.JTextField();
         jTextFieldFullName = new javax.swing.JTextField();
-        jTextFieldEmployeeNumber = new javax.swing.JTextField();
+        jTextFieldEmployeeID = new javax.swing.JTextField();
         jTextFieldRequestDate = new javax.swing.JTextField();
         jTextFieldOvertimeRequestID = new javax.swing.JTextField();
         jLabelSupervisor = new javax.swing.JLabel();
@@ -58,7 +90,7 @@ public class ViewOvertimePanel extends javax.swing.JPanel {
         jLabelHelloEmployee.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         jLabelHelloEmployee.setText("Hello, Employee!");
         jPanel1.add(jLabelHelloEmployee);
-        jLabelHelloEmployee.setBounds(30, 30, 210, 29);
+        jLabelHelloEmployee.setBounds(30, 30, 580, 29);
 
         jLabelOvertimeSmall.setText("Overtime > View Record");
         jPanel1.add(jLabelOvertimeSmall);
@@ -88,7 +120,7 @@ public class ViewOvertimePanel extends javax.swing.JPanel {
         jLabelEmployeeNumber.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         jLabelEmployeeNumber.setForeground(new java.awt.Color(0, 0, 0));
         jLabelEmployeeNumber.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        jLabelEmployeeNumber.setText("Employee # :");
+        jLabelEmployeeNumber.setText("Employee ID :");
         jPanelOvertimeRequestBox.add(jLabelEmployeeNumber);
         jLabelEmployeeNumber.setBounds(30, 230, 290, 40);
 
@@ -126,6 +158,7 @@ public class ViewOvertimePanel extends javax.swing.JPanel {
         jPanelOvertimeRequestBox.add(jLabelBack);
         jLabelBack.setBounds(0, 560, 60, 60);
 
+        jTextFieldDepartment.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldDepartment.setEnabled(false);
         jTextFieldDepartment.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -135,6 +168,7 @@ public class ViewOvertimePanel extends javax.swing.JPanel {
         jPanelOvertimeRequestBox.add(jTextFieldDepartment);
         jTextFieldDepartment.setBounds(180, 350, 350, 40);
 
+        jTextFieldPosition.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldPosition.setEnabled(false);
         jTextFieldPosition.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -144,6 +178,7 @@ public class ViewOvertimePanel extends javax.swing.JPanel {
         jPanelOvertimeRequestBox.add(jTextFieldPosition);
         jTextFieldPosition.setBounds(180, 310, 350, 40);
 
+        jTextFieldFullName.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldFullName.setEnabled(false);
         jTextFieldFullName.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -153,17 +188,17 @@ public class ViewOvertimePanel extends javax.swing.JPanel {
         jPanelOvertimeRequestBox.add(jTextFieldFullName);
         jTextFieldFullName.setBounds(180, 270, 350, 40);
 
-        jTextFieldEmployeeNumber.setDisabledTextColor(new java.awt.Color(255, 255, 255));
-        jTextFieldEmployeeNumber.setEnabled(false);
-        jTextFieldEmployeeNumber.addActionListener(new java.awt.event.ActionListener() {
+        jTextFieldEmployeeID.setDisabledTextColor(new java.awt.Color(0, 0, 0));
+        jTextFieldEmployeeID.setEnabled(false);
+        jTextFieldEmployeeID.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jTextFieldEmployeeNumberActionPerformed(evt);
+                jTextFieldEmployeeIDActionPerformed(evt);
             }
         });
-        jPanelOvertimeRequestBox.add(jTextFieldEmployeeNumber);
-        jTextFieldEmployeeNumber.setBounds(180, 230, 350, 40);
+        jPanelOvertimeRequestBox.add(jTextFieldEmployeeID);
+        jTextFieldEmployeeID.setBounds(180, 230, 350, 40);
 
-        jTextFieldRequestDate.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldRequestDate.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldRequestDate.setEnabled(false);
         jTextFieldRequestDate.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -173,7 +208,7 @@ public class ViewOvertimePanel extends javax.swing.JPanel {
         jPanelOvertimeRequestBox.add(jTextFieldRequestDate);
         jTextFieldRequestDate.setBounds(180, 190, 350, 40);
 
-        jTextFieldOvertimeRequestID.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldOvertimeRequestID.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldOvertimeRequestID.setEnabled(false);
         jTextFieldOvertimeRequestID.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -231,6 +266,7 @@ public class ViewOvertimePanel extends javax.swing.JPanel {
         jPanelOvertimeRequestBox.add(jLabelStatus);
         jLabelStatus.setBounds(540, 350, 290, 40);
 
+        jTextFieldStatus.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldStatus.setEnabled(false);
         jTextFieldStatus.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -240,6 +276,7 @@ public class ViewOvertimePanel extends javax.swing.JPanel {
         jPanelOvertimeRequestBox.add(jTextFieldStatus);
         jTextFieldStatus.setBounds(690, 350, 350, 40);
 
+        jTextFieldApprovedBy.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldApprovedBy.setEnabled(false);
         jTextFieldApprovedBy.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -252,12 +289,14 @@ public class ViewOvertimePanel extends javax.swing.JPanel {
         jTextAreaReason.setColumns(20);
         jTextAreaReason.setLineWrap(true);
         jTextAreaReason.setRows(5);
+        jTextAreaReason.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextAreaReason.setEnabled(false);
         jScrollPane1.setViewportView(jTextAreaReason);
 
         jPanelOvertimeRequestBox.add(jScrollPane1);
         jScrollPane1.setBounds(690, 270, 350, 40);
 
+        jTextFieldOvertimeHours.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldOvertimeHours.setEnabled(false);
         jTextFieldOvertimeHours.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -267,6 +306,7 @@ public class ViewOvertimePanel extends javax.swing.JPanel {
         jPanelOvertimeRequestBox.add(jTextFieldOvertimeHours);
         jTextFieldOvertimeHours.setBounds(690, 230, 350, 40);
 
+        jTextFieldOvertimeWorkDate.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldOvertimeWorkDate.setEnabled(false);
         jTextFieldOvertimeWorkDate.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -276,6 +316,7 @@ public class ViewOvertimePanel extends javax.swing.JPanel {
         jPanelOvertimeRequestBox.add(jTextFieldOvertimeWorkDate);
         jTextFieldOvertimeWorkDate.setBounds(690, 190, 350, 40);
 
+        jTextFieldSupervisor.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldSupervisor.setEnabled(false);
         jTextFieldSupervisor.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -309,9 +350,9 @@ public class ViewOvertimePanel extends javax.swing.JPanel {
         // TODO add your handling code here:
     }//GEN-LAST:event_jTextFieldFullNameActionPerformed
 
-    private void jTextFieldEmployeeNumberActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldEmployeeNumberActionPerformed
+    private void jTextFieldEmployeeIDActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldEmployeeIDActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jTextFieldEmployeeNumberActionPerformed
+    }//GEN-LAST:event_jTextFieldEmployeeIDActionPerformed
 
     private void jTextFieldRequestDateActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldRequestDateActionPerformed
         // TODO add your handling code here:
@@ -363,7 +404,7 @@ public class ViewOvertimePanel extends javax.swing.JPanel {
     private javax.swing.JTextArea jTextAreaReason;
     private javax.swing.JTextField jTextFieldApprovedBy;
     private javax.swing.JTextField jTextFieldDepartment;
-    private javax.swing.JTextField jTextFieldEmployeeNumber;
+    private javax.swing.JTextField jTextFieldEmployeeID;
     private javax.swing.JTextField jTextFieldFullName;
     private javax.swing.JTextField jTextFieldOvertimeHours;
     private javax.swing.JTextField jTextFieldOvertimeRequestID;

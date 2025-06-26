@@ -2,7 +2,6 @@ package model.pojo;
 
 import java.time.LocalDateTime;
 
-
 public class Address {
     private int addressID;
     private String street;
@@ -22,6 +21,10 @@ public class Address {
         this.zipCode = zipCode;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+    }
+
+    public Address() {
+        
     }
 
     public int getAddressID() {

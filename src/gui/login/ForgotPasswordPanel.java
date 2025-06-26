@@ -1,6 +1,11 @@
 package gui.login;
 
 import java.awt.CardLayout;
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Date;
+import service.AuthenticationService;
+import util.UIUtil;
 
 public class ForgotPasswordPanel extends javax.swing.JPanel {
     
@@ -19,7 +24,7 @@ public class ForgotPasswordPanel extends javax.swing.JPanel {
         jLabelBirthday = new javax.swing.JLabel();
         jLabelForgotPassword = new javax.swing.JLabel();
         jTextFieldUsername = new javax.swing.JTextField();
-        jButtonSumbit = new javax.swing.JButton();
+        jButtonSubmit = new javax.swing.JButton();
         jLabelUsername = new javax.swing.JLabel();
         jLabelInstruction = new javax.swing.JLabel();
         jLabelMotorLogo = new javax.swing.JLabel();
@@ -58,16 +63,16 @@ public class ForgotPasswordPanel extends javax.swing.JPanel {
         });
         jPanelForgotPassword.add(jTextFieldUsername, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, 180, 370, 40));
 
-        jButtonSumbit.setBackground(new java.awt.Color(0, 135, 0));
-        jButtonSumbit.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
-        jButtonSumbit.setForeground(new java.awt.Color(255, 255, 255));
-        jButtonSumbit.setText("SUBMIT");
-        jButtonSumbit.addActionListener(new java.awt.event.ActionListener() {
+        jButtonSubmit.setBackground(new java.awt.Color(0, 135, 0));
+        jButtonSubmit.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        jButtonSubmit.setForeground(new java.awt.Color(255, 255, 255));
+        jButtonSubmit.setText("SUBMIT");
+        jButtonSubmit.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButtonSumbitActionPerformed(evt);
+                jButtonSubmitActionPerformed(evt);
             }
         });
-        jPanelForgotPassword.add(jButtonSumbit, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, 480, 370, 50));
+        jPanelForgotPassword.add(jButtonSubmit, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, 480, 370, 50));
 
         jLabelUsername.setBackground(new java.awt.Color(255, 255, 255));
         jLabelUsername.setFont(new java.awt.Font("Segoe UI", 2, 14)); // NOI18N
@@ -136,7 +141,7 @@ public class ForgotPasswordPanel extends javax.swing.JPanel {
                 jLabelBackMouseClicked(evt);
             }
         });
-        jPanelForgotPassword.add(jLabelBack, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 70, 70));
+        jPanelForgotPassword.add(jLabelBack, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 70, 80));
 
         add(jPanelForgotPassword, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 490, 570));
     }// </editor-fold>//GEN-END:initComponents
@@ -145,11 +150,51 @@ public class ForgotPasswordPanel extends javax.swing.JPanel {
         // TODO add your handling code here:
     }//GEN-LAST:event_jTextFieldUsernameActionPerformed
 
-    private void jButtonSumbitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonSumbitActionPerformed
+    private void jButtonSubmitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonSubmitActionPerformed
         // TODO add your handling code here:
-        CardLayout cardLayout = (CardLayout) loginPortal.getPanelParentCard().getLayout();
-        cardLayout.show(loginPortal.getPanelParentCard(), "Login");
-    }//GEN-LAST:event_jButtonSumbitActionPerformed
+        String username = jTextFieldUsername.getText().trim();
+        Date birthdayDate = jDateChooserBirthday.getDate();
+        if (birthdayDate == null) {
+            UIUtil.showWarningMessage(this, "All fields are required.", "Reset Password");
+            return;
+        }
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");    
+        String birthday = sdf.format(birthdayDate);
+        String sssNumber = new String(jPasswordFieldSssNumber.getPassword());
+        String newPassword = new String(jPasswordFieldNewPassword.getPassword());
+        String confirmPassword = new String(jPasswordFieldConfirmPassword.getPassword());
+
+        // Empty‐field checks
+        if (username.isEmpty() || birthday.isEmpty() || sssNumber.isEmpty()
+                || newPassword.isEmpty() || confirmPassword.isEmpty()) {
+            UIUtil.showWarningMessage(this, "All fields are required.", "Reset Password");
+            return;
+        }
+
+        // Password match check
+        if (!newPassword.equals(confirmPassword)) {
+            UIUtil.showErrorMessage(this, "New password and confirmation do not match.", "Reset Password");
+            return;
+        }
+
+        // Attempt the reset
+        AuthenticationService authService = new AuthenticationService();
+        try {
+            authService.resetPassword(username, birthday, sssNumber, newPassword);
+            UIUtil.showInfoMessage(this, "Password reset successful! You may now log in with your new password.", "Reset Password");
+
+            CardLayout cardLayout = (CardLayout) loginPortal.getPanelParentCard().getLayout();
+            cardLayout.show(loginPortal.getPanelParentCard(), "Login");
+
+        } catch (Exception ex) {
+            UIUtil.showErrorMessage(this, ex.getMessage(), "Reset Password Failed");
+        } finally {
+            // Zero out the password arrays for security
+            Arrays.fill(jPasswordFieldNewPassword.getPassword(), '\0');
+            Arrays.fill(jPasswordFieldConfirmPassword.getPassword(), '\0');
+        }
+        
+    }//GEN-LAST:event_jButtonSubmitActionPerformed
 
     private void jPasswordFieldSssNumberActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jPasswordFieldSssNumberActionPerformed
         // TODO add your handling code here:
@@ -170,7 +215,7 @@ public class ForgotPasswordPanel extends javax.swing.JPanel {
     }//GEN-LAST:event_jLabelBackMouseClicked
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton jButtonSumbit;
+    private javax.swing.JButton jButtonSubmit;
     private com.toedter.calendar.JDateChooser jDateChooserBirthday;
     private javax.swing.JLabel jLabelBack;
     private javax.swing.JLabel jLabelBirthday;

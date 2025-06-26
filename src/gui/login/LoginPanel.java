@@ -5,13 +5,21 @@ import gui.admin.hr.*;
 import gui.admin.finance.*;
 import gui.admin.it.*;
 import java.awt.CardLayout;
+import javax.swing.SwingUtilities;
+import model.pojo.Role;
+import model.pojo.UserAccount;
+import service.AuthenticationService;
+import util.Session;
+import util.UIUtil;
 
 public class LoginPanel extends javax.swing.JPanel {
     
     private final LoginPortal loginPortal;
+    private final AuthenticationService authService;
 
     public LoginPanel(LoginPortal loginPortal) {
         this.loginPortal = loginPortal;
+        this.authService = new AuthenticationService();
         initComponents();
     }
 
@@ -134,21 +142,53 @@ public class LoginPanel extends javax.swing.JPanel {
 
     private void jButtonLoginActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonLoginActionPerformed
         // TODO add your handling code here:
-        EmployeePortal employeePortal = new EmployeePortal();
-        employeePortal.setVisible(true);
-        loginPortal.dispose();
+        String username = jTextFieldUsername.getText().trim();
+        String password = new String(jPasswordFieldPassword.getPassword());
+
+        // Empty field check
+        if (username.isEmpty() || password.isEmpty()) {
+            UIUtil.showWarningMessage(this, "Please enter both username and password.", "Login Error");
+            return;
+        }
+
+        UserAccount user;
         
+        try {
+            user = authService.login(username, password);
+        } catch (Exception ex) {
+            UIUtil.showErrorMessage(this, ex.getMessage(), "Login Failed");
+            return;
+        }
+
+        Session.setCurrentUser(user);
+
+        SwingUtilities.getWindowAncestor(this).dispose();
+
+        Role role = authService.getCurrentRole();
+        String roleName = role.getRoleName();
+
+        switch (roleName) {
+            case "Employee":
+                new EmployeePortal().setVisible(true);
+                break;
+            case "HR Admin":
+                new AdminHRPortal().setVisible(true);
+                break;
+            case "Finance Admin":
+                new AdminFinancePortal().setVisible(true);
+                break;
+            case "IT Admin":
+                new AdminITPortal().setVisible(true);
+                break;
+            default:
+                UIUtil.showErrorMessage(this, "Unrecognized role: " + roleName, "Login Error");
+        }
     }//GEN-LAST:event_jButtonLoginActionPerformed
 
     private void jLabelForgotPasswordMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabelForgotPasswordMouseClicked
         // TODO add your handling code here:
         CardLayout cardLayout = (CardLayout) loginPortal.getPanelParentCard().getLayout();
         cardLayout.show(loginPortal.getPanelParentCard(), "ForgotPassword");
-        
-//        JOptionPane.showMessageDialog(this,
-//            "Please contact IT support to reset your password.",
-//            "Forgot Password",
-//            JOptionPane.INFORMATION_MESSAGE);
     }//GEN-LAST:event_jLabelForgotPasswordMouseClicked
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

@@ -2,11 +2,10 @@ package model.pojo;
 
 import java.math.BigDecimal;
 
-
 public class PhilHealthMatrix {
     private int philhealthID;
     private BigDecimal minGrossIncome;
-    private BigDecimal maxGrossIncome;        // nullable
+    private BigDecimal maxGrossIncome;
     private BigDecimal premiumRate;
     private BigDecimal contributionAmount;
 
@@ -18,6 +17,10 @@ public class PhilHealthMatrix {
         this.contributionAmount = contributionAmount;
     }
 
+    public PhilHealthMatrix() {
+        
+    }
+    
     public int getPhilhealthID() {
         return philhealthID;
     }

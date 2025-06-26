@@ -6,12 +6,11 @@ import gui.admin.it.*;
 import gui.login.LoginPortal;
 import java.awt.CardLayout;
 import java.awt.Color;
-import java.awt.Font;
-import java.awt.Image;
-import java.awt.Toolkit;
-import javax.swing.JLabel;
+import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import service.AuthenticationService;
+import util.UIUtil;
 
 public class EmployeePortal extends javax.swing.JFrame {
     private final Color defaultPanelColor = Color.WHITE;
@@ -27,11 +26,14 @@ public class EmployeePortal extends javax.swing.JFrame {
     private final ViewOvertimePanel viewOvertimePanel;
     private final SupportPanel supportPanel;
     private final ViewTicketPanel viewTicketPanel;
+    private final AuthenticationService authService;
 
     public EmployeePortal() {
-        setFlatLafUI();
+        UIUtil.setFlatLafUI();
         this.setTitle("MotorPH Employee Portal");
-        setWindowIcon();
+        setEmployeeWindowIcon();
+        this.authService = new AuthenticationService();
+        initComponents();
         employeeDashboardPanel = new EmployeeDashboardPanel(this);
         profilePanel = new ProfilePanel(this);
         changePasswordPanel = new ChangePasswordPanel(this);
@@ -43,31 +45,34 @@ public class EmployeePortal extends javax.swing.JFrame {
         viewOvertimePanel = new ViewOvertimePanel(this);
         supportPanel = new SupportPanel(this);
         viewTicketPanel = new ViewTicketPanel(this);
-        initComponents();
         addHooverEffectToTabs();
         addPanels();
+        configureAdminPortalButton();
         this.setLocationRelativeTo(null);
     }
     
-    private void setFlatLafUI() {
-        try {
-            com.formdev.flatlaf.FlatIntelliJLaf.setup();
-        } catch (Exception ex) {
-            System.err.println("Failed to initialize FlatLaf.");
-        }
-    }
-    
-    private void setWindowIcon() {
-        try {
-            Image icon = Toolkit.getDefaultToolkit().getImage(getClass().getResource("/images/title-blue-motor-logo.png"));
-            this.setIconImage(icon);
-        } catch (Exception e) {
-            System.err.println("Icon image not found.");
-        }
+    private void setEmployeeWindowIcon() {
+        UIUtil.setWindowIcon(this, "/images/title-blue-motor-logo.png");
     }
     
     public JPanel getPanelParentCard() {
         return this.jPanelParentCard;
+    }
+    
+    public EmployeeDashboardPanel getEmployeeDashboardPanel() {
+        return employeeDashboardPanel;
+    }
+    
+    public ViewLeavePanel getViewLeavePanel() {
+        return viewLeavePanel;
+    }
+    
+    public ViewOvertimePanel getViewOvertimePanel() {
+        return viewOvertimePanel;
+    }
+    
+    public ViewTicketPanel getViewTicketPanel() {
+        return viewTicketPanel;
     }
     
     private void addPanels() {
@@ -83,36 +88,29 @@ public class EmployeePortal extends javax.swing.JFrame {
         getPanelParentCard().add(supportPanel, "Support");
         getPanelParentCard().add(viewTicketPanel, "ViewTicket");
     }
-    
+
     private void addHooverEffectToTabs() {
-        addHoverEffect(jLabelEmployeeDashboard, jPanelEmployeeDashboard);
-        addHoverEffect(jLabelProfile, jPanelProfile);
-        addHoverEffect(jLabelAttendance, jPanelAttendance);
-        addHoverEffect(jLabelPayslip, jPanelPayslip);
-        addHoverEffect(jLabelLeave, jPanelLeave);
-        addHoverEffect(jLabelOvertime, jPanelOvertime);
-        addHoverEffect(jLabelSupport, jPanelSupport);
-        addHoverEffect(jLabelAdminPortal, jPanelAdminPortal);
+        UIUtil.addHoverEffect(jLabelEmployeeDashboard, jPanelEmployeeDashboard, defaultPanelColor, hoverPanelColor);
+        UIUtil.addHoverEffect(jLabelProfile, jPanelProfile, defaultPanelColor, hoverPanelColor);
+        UIUtil.addHoverEffect(jLabelAttendance, jPanelAttendance, defaultPanelColor, hoverPanelColor);
+        UIUtil.addHoverEffect(jLabelPayslip, jPanelPayslip, defaultPanelColor, hoverPanelColor);
+        UIUtil.addHoverEffect(jLabelLeave, jPanelLeave, defaultPanelColor, hoverPanelColor);
+        UIUtil.addHoverEffect(jLabelOvertime, jPanelOvertime, defaultPanelColor, hoverPanelColor);
+        UIUtil.addHoverEffect(jLabelSupport, jPanelSupport, defaultPanelColor, hoverPanelColor);
+        UIUtil.addHoverEffect(jLabelAdminPortal, jPanelAdminPortal, defaultPanelColor, hoverPanelColor);
     }
+    
+    private void configureAdminPortalButton() {
+        boolean isAdmin = authService.isAdmin();
 
-    private void addHoverEffect(JLabel label, JPanel panel) {
-        Font originalFont = label.getFont();
-
-        label.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                panel.setBackground(hoverPanelColor);
-                label.setFont(originalFont.deriveFont(Font.BOLD));
-                label.setForeground(Color.WHITE);
-            }
-
-            @Override
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                panel.setBackground(defaultPanelColor);
-                label.setFont(originalFont);
-                label.setForeground(Color.BLACK);
-            }
-        });
+        // Hide button for plain employees
+        jLabelAdminPortal.setVisible(isAdmin);
+        jPanelAdminPortal.setVisible(isAdmin);
+        
+        // Exit guard
+        if (!isAdmin) {
+            return;
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -400,9 +398,17 @@ public class EmployeePortal extends javax.swing.JFrame {
 
     private void jLabelAdminPortalMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabelAdminPortalMouseClicked
         // TODO add your handling code here:
-        AdminHRPortal hrPortal = new AdminHRPortal();
-        hrPortal.setVisible(true);
-        this.dispose();
+        AuthenticationService authService = new AuthenticationService();
+
+        // Launch the correct admin portal (or null if not an admin)
+        JFrame adminFrame = authService.launchAdminPortal();
+
+        if (adminFrame != null) {
+            this.dispose();
+            adminFrame.setVisible(true);
+        } else {
+            UIUtil.showErrorMessage(this, "You are not authorized to open an admin portal.", "Access Denied");
+        }
     }//GEN-LAST:event_jLabelAdminPortalMouseClicked
 
     private void jLabelLogOutMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabelLogOutMouseClicked

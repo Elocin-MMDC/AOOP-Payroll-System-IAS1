@@ -1,16 +1,85 @@
 package gui.admin.hr;
 
 import java.awt.CardLayout;
+import java.util.List;
+import javax.swing.table.DefaultTableModel;
+import model.pojo.EmployeeView;
+import service.EmployeeService;
+import util.UIUtil;
 
 public class EmployeesPanel extends javax.swing.JPanel {
 
     private final AdminHRPortal hrPortal;
+    private final EmployeeService employeeService;
     
     public EmployeesPanel(AdminHRPortal hrPortal) {
         this.hrPortal = hrPortal;
+        this.employeeService = new EmployeeService();
         initComponents();
+        UIUtil.setGreeting(jLabelHelloAdmin, "Admin");
+        loadEmployeeRecords();
     }
+    
+    protected final void loadEmployeeRecords() {
+        List<EmployeeView> employees = employeeService.getAllActiveEmployees();
 
+        String[] cols = {
+            "Employee ID",
+            "Last Name",
+            "First Name",
+            "SSS #",
+            "PhilHealth #",
+            "TIN",
+            "PagIbig #"
+        };
+
+        UIUtil.styleTable(jTableEmployeeRecords, cols);
+
+        DefaultTableModel model = (DefaultTableModel) jTableEmployeeRecords.getModel();
+        model.setRowCount(0);
+        
+        for (EmployeeView e : employees) {
+            model.addRow(new Object[]{
+                e.getEmployeeID(),
+                e.getLastName(),
+                e.getFirstName(),
+                e.getSssNumber(),
+                e.getPhilHealthNumber(),
+                e.getTin(),
+                e.getPagIbigNumber()
+            });
+        }
+
+        UIUtil.installSearchFilter(jTableEmployeeRecords, jTextFieldSearch, 0, 1, 2, 3, 4, 5, 6);
+    }
+    
+    protected void onViewClicked() {
+        int row = jTableEmployeeRecords.getSelectedRow();
+        if (row < 0) {
+            UIUtil.showWarningMessage(this, "Please select an employee to view.", "No Selection");
+            return;
+        }
+
+        int empId = (int) jTableEmployeeRecords.getValueAt(row, 0);
+        hrPortal.getViewEmployeePanel().loadSelectedEmployee(empId);
+
+        CardLayout cardLayout = (CardLayout) hrPortal.getPanelParentCard().getLayout();
+        cardLayout.show(hrPortal.getPanelParentCard(), "ViewEmployee");
+    }
+    
+    private void onCreateClicked() {
+        // Populate next available employee ID
+        int nextEmpId = employeeService.getNextEmployeeId();
+        if (nextEmpId > 0) {
+            hrPortal.getCreateEmployeePanel().getJTextFieldEmployeeID().setText(String.valueOf(nextEmpId));
+        } else {
+            UIUtil.showErrorMessage(this, "Failed to retrieve next Employee ID.", "Error");
+        }
+        
+        CardLayout cardLayout = (CardLayout) hrPortal.getPanelParentCard().getLayout();
+        cardLayout.show(hrPortal.getPanelParentCard(), "CreateEmployee");
+    }
+    
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
@@ -24,8 +93,8 @@ public class EmployeesPanel extends javax.swing.JPanel {
         jTableEmployeeRecords = new javax.swing.JTable();
         jButtonCreate = new javax.swing.JButton();
         jButtonView = new javax.swing.JButton();
-        jLabelSeachByEmployeeID = new javax.swing.JLabel();
-        jTextFieldSearchById = new javax.swing.JTextField();
+        jTextFieldSearch = new javax.swing.JTextField();
+        jLabelSeach = new javax.swing.JLabel();
 
         setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
@@ -39,7 +108,7 @@ public class EmployeesPanel extends javax.swing.JPanel {
         jLabelHelloAdmin.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         jLabelHelloAdmin.setText("Hello, Admin!");
         jPanel1.add(jLabelHelloAdmin);
-        jLabelHelloAdmin.setBounds(30, 30, 137, 29);
+        jLabelHelloAdmin.setBounds(30, 30, 530, 29);
 
         jLabelEmployeesSmall.setText("Employees");
         jPanel1.add(jLabelEmployeesSmall);
@@ -92,7 +161,7 @@ public class EmployeesPanel extends javax.swing.JPanel {
                 {null, null, null, null, null, null, null}
             },
             new String [] {
-                "Employee ID", "Last Name", "First Name", "SSS#", "PhilHealth#", "TIN", "Pag-Ibig#"
+                "Employee ID", "Last Name", "First Name", "SSS #", "PhilHealth #", "TIN", "Pag-Ibig #"
             }
         ) {
             Class[] types = new Class [] {
@@ -144,27 +213,27 @@ public class EmployeesPanel extends javax.swing.JPanel {
         jPanelRecordsBox.add(jButtonView);
         jButtonView.setBounds(870, 580, 170, 40);
 
-        jLabelSeachByEmployeeID.setBackground(new java.awt.Color(255, 255, 255));
-        jLabelSeachByEmployeeID.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
-        jLabelSeachByEmployeeID.setForeground(new java.awt.Color(0, 0, 0));
-        jLabelSeachByEmployeeID.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        jLabelSeachByEmployeeID.setText("Search by Employee ID :");
-        jPanelRecordsBox.add(jLabelSeachByEmployeeID);
-        jLabelSeachByEmployeeID.setBounds(20, 30, 180, 40);
-
-        jTextFieldSearchById.setDisabledTextColor(new java.awt.Color(255, 255, 255));
-        jTextFieldSearchById.addActionListener(new java.awt.event.ActionListener() {
+        jTextFieldSearch.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldSearch.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jTextFieldSearchByIdActionPerformed(evt);
+                jTextFieldSearchActionPerformed(evt);
             }
         });
-        jTextFieldSearchById.addKeyListener(new java.awt.event.KeyAdapter() {
+        jTextFieldSearch.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyPressed(java.awt.event.KeyEvent evt) {
-                jTextFieldSearchByIdKeyPressed(evt);
+                jTextFieldSearchKeyPressed(evt);
             }
         });
-        jPanelRecordsBox.add(jTextFieldSearchById);
-        jTextFieldSearchById.setBounds(200, 30, 260, 40);
+        jPanelRecordsBox.add(jTextFieldSearch);
+        jTextFieldSearch.setBounds(100, 30, 260, 40);
+
+        jLabelSeach.setBackground(new java.awt.Color(255, 255, 255));
+        jLabelSeach.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        jLabelSeach.setForeground(new java.awt.Color(0, 0, 0));
+        jLabelSeach.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        jLabelSeach.setText("Search :");
+        jPanelRecordsBox.add(jLabelSeach);
+        jLabelSeach.setBounds(20, 30, 80, 40);
 
         jPanel1.add(jPanelRecordsBox);
         jPanelRecordsBox.setBounds(30, 100, 1060, 650);
@@ -174,23 +243,21 @@ public class EmployeesPanel extends javax.swing.JPanel {
 
     private void jButtonCreateActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonCreateActionPerformed
         // TODO add your handling code here:
-        CardLayout cardLayout = (CardLayout) hrPortal.getPanelParentCard().getLayout();
-        cardLayout.show(hrPortal.getPanelParentCard(), "CreateEmployee");
+        onCreateClicked();
     }//GEN-LAST:event_jButtonCreateActionPerformed
 
     private void jButtonViewActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonViewActionPerformed
-        // TODO add your handling code here:
-        CardLayout cardLayout = (CardLayout) hrPortal.getPanelParentCard().getLayout();
-        cardLayout.show(hrPortal.getPanelParentCard(), "ViewEmployee");
+        // TODO add your handling code here:    
+        onViewClicked();
     }//GEN-LAST:event_jButtonViewActionPerformed
 
-    private void jTextFieldSearchByIdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldSearchByIdActionPerformed
+    private void jTextFieldSearchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldSearchActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jTextFieldSearchByIdActionPerformed
+    }//GEN-LAST:event_jTextFieldSearchActionPerformed
 
-    private void jTextFieldSearchByIdKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTextFieldSearchByIdKeyPressed
+    private void jTextFieldSearchKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTextFieldSearchKeyPressed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jTextFieldSearchByIdKeyPressed
+    }//GEN-LAST:event_jTextFieldSearchKeyPressed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButtonCreate;
@@ -198,11 +265,11 @@ public class EmployeesPanel extends javax.swing.JPanel {
     private javax.swing.JLabel jLabelEmployeeRecords;
     private javax.swing.JLabel jLabelEmployeesSmall;
     private javax.swing.JLabel jLabelHelloAdmin;
-    private javax.swing.JLabel jLabelSeachByEmployeeID;
+    private javax.swing.JLabel jLabelSeach;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanelRecordsBox;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTable jTableEmployeeRecords;
-    private javax.swing.JTextField jTextFieldSearchById;
+    private javax.swing.JTextField jTextFieldSearch;
     // End of variables declaration//GEN-END:variables
 }

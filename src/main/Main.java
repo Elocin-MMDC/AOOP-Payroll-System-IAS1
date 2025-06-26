@@ -9,12 +9,11 @@ import gui.login.LoginPortal;
 public class Main {
 
     public static void main(String[] args) {
-        // TODO code application logic here
         //hrPortal();
         //employeePortal();
-        financePortal();
-       // itPortal();
-        //loginPortal();
+        //financePortal();
+        //itPortal();
+        loginPortal();
     }
     
     public static void hrPortal() {

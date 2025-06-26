@@ -1,6 +1,5 @@
 package model.pojo;
 
-
 public class Role {
     private int roleID;
     private String roleName;
@@ -10,6 +9,10 @@ public class Role {
         this.roleID = roleID;
         this.roleName = roleName;
         this.description = description;
+    }
+
+    public Role() {
+        
     }
 
     public int getRoleID() {

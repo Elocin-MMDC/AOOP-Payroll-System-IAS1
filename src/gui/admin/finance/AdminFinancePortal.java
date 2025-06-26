@@ -4,12 +4,8 @@ import gui.employee.EmployeePortal;
 import gui.login.LoginPortal;
 import java.awt.CardLayout;
 import java.awt.Color;
-import java.awt.Font;
-import java.awt.Image;
-import java.awt.Toolkit;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import util.UIUtil;
 
 public class AdminFinancePortal extends javax.swing.JFrame {
     private final Color defaultPanelColor = Color.WHITE;
@@ -23,9 +19,9 @@ public class AdminFinancePortal extends javax.swing.JFrame {
     private final ReportsPanel reportsPanel;
 
     public AdminFinancePortal() {
-        setFlatLafUI();
+        UIUtil.setFlatLafUI();
+        setAdminWindowIcon();
         this.setTitle("MotorPH Finance Portal");
-        setWindowIcon();
         financeDashboardPanel = new FinanceDashboardPanel(this);
         ticketsPanel = new TicketsPanel(this);
         viewTicketPanel = new ViewTicketPanel(this);
@@ -39,21 +35,28 @@ public class AdminFinancePortal extends javax.swing.JFrame {
         this.setLocationRelativeTo(null);
     }
     
-    private void setFlatLafUI() {
-        try {
-            com.formdev.flatlaf.FlatIntelliJLaf.setup();
-        } catch (Exception ex) {
-            System.err.println("Failed to initialize FlatLaf.");
-        }
+    public FinanceDashboardPanel getFinanceDashboardPanel() {
+        return financeDashboardPanel;
     }
     
-    private void setWindowIcon() {
-        try {
-            Image icon = Toolkit.getDefaultToolkit().getImage(getClass().getResource("/images/title-green-motor-logo.png"));
-            this.setIconImage(icon);
-        } catch (Exception e) {
-            System.err.println("Icon image not found.");
-        }
+    public TicketsPanel getTicketsPanel() {
+        return ticketsPanel;
+    }
+    
+    public ViewTicketPanel getViewTicketPanel() {
+        return viewTicketPanel;
+    }
+    
+    public ViewCompensationPanel getViewCompensationPanel() {
+        return viewCompensationPanel;
+    }
+    
+    public ReportsPanel getReportsPanel() {
+        return reportsPanel;
+    }
+    
+    private void setAdminWindowIcon() {
+        UIUtil.setWindowIcon(this, "/images/title-green-motor-logo.png");
     }
     
     public JPanel getPanelParentCard() {
@@ -71,32 +74,12 @@ public class AdminFinancePortal extends javax.swing.JFrame {
     }
     
     private void addHooverEffectToTabs() {
-        addHoverEffect(jLabelFinanceDashboard, jPanelFinanceDashboard);
-        addHoverEffect(jLabelEmployeePortal, jPanelEmployeePortal);
-        addHoverEffect(jLabelTickets, jPanelTickets);
-        addHoverEffect(jLabelCompensation, jPanelCompensation);
-        addHoverEffect(jLabelPayroll, jPanelPayroll);
-        addHoverEffect(jLabelReports, jPanelReports);
-    }
-
-    private void addHoverEffect(JLabel label, JPanel panel) {
-        Font originalFont = label.getFont();
-
-        label.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                panel.setBackground(hoverPanelColor);
-                label.setFont(originalFont.deriveFont(Font.BOLD));
-                label.setForeground(Color.WHITE);
-            }
-
-            @Override
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                panel.setBackground(defaultPanelColor);
-                label.setFont(originalFont);
-                label.setForeground(Color.BLACK);
-            }
-        });
+        UIUtil.addHoverEffect(jLabelFinanceDashboard, jPanelFinanceDashboard, defaultPanelColor, hoverPanelColor);
+        UIUtil.addHoverEffect(jLabelEmployeePortal, jPanelEmployeePortal, defaultPanelColor, hoverPanelColor);
+        UIUtil.addHoverEffect(jLabelTickets, jPanelTickets, defaultPanelColor, hoverPanelColor);
+        UIUtil.addHoverEffect(jLabelCompensation, jPanelCompensation, defaultPanelColor, hoverPanelColor);
+        UIUtil.addHoverEffect(jLabelPayroll, jPanelPayroll, defaultPanelColor, hoverPanelColor);
+        UIUtil.addHoverEffect(jLabelReports, jPanelReports, defaultPanelColor, hoverPanelColor);
     }
 
     @SuppressWarnings("unchecked")
@@ -335,14 +318,9 @@ public class AdminFinancePortal extends javax.swing.JFrame {
 
     private void jLabelLogOutMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabelLogOutMouseClicked
         // TODO add your handling code here:
-        int confirm = JOptionPane.showConfirmDialog(
-                this,
-                "Are you sure you want to log out?",
-                "Confirm Logout",
-                JOptionPane.YES_NO_OPTION
-        );
-
-        if (confirm == JOptionPane.YES_OPTION) {
+        boolean confirmed = UIUtil.showConfirmation(this, "Are you sure you want to log out?");
+        
+        if (confirmed) {
             LoginPortal loginPortal = new LoginPortal();
             loginPortal.setVisible(true);
             this.dispose();

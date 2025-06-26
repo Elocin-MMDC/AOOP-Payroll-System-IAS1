@@ -2,7 +2,6 @@ package model.pojo;
 
 import java.math.BigDecimal;
 
-
 public class SSSMatrix {
     private int sssID;
     private BigDecimal minGrossIncome;
@@ -14,6 +13,10 @@ public class SSSMatrix {
         this.minGrossIncome = minGrossIncome;
         this.maxGrossIncome = maxGrossIncome;
         this.contributionAmount = contributionAmount;
+    }
+    
+    public SSSMatrix() {
+        
     }
 
     public int getSssID() {

@@ -1,14 +1,122 @@
 package gui.employee;
 
 import java.awt.CardLayout;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Date;
+import java.util.List;
+import javax.swing.table.DefaultTableModel;
+import model.pojo.OvertimeRequest;
+import service.RequestService;
+import util.Session;
+import util.UIUtil;
 
 public class OvertimePanel extends javax.swing.JPanel {
     
     private final EmployeePortal employeePortal;
+    private final RequestService requestService;
 
     public OvertimePanel(EmployeePortal employeePortal) {
         this.employeePortal = employeePortal;
+        this.requestService = new RequestService();
         initComponents();
+        UIUtil.setGreeting(jLabelHelloEmployee, "Employee");
+        loadOvertimeHistory();
+    }
+    
+    private void loadOvertimeHistory() {
+        int empId = Session.getCurrentUser().getEmployeeID();
+        List<OvertimeRequest> history = requestService.getOvertimeHistory(empId);
+
+        String[] cols = {
+            "Overtime ID", 
+            "Request Date",
+            "Overtime Work Date", 
+            "Hours", 
+            "Status"
+        };
+
+        UIUtil.styleTable(jTableOvertimeHistory, cols);
+        DefaultTableModel model = (DefaultTableModel) jTableOvertimeHistory.getModel();
+
+        for (OvertimeRequest or : history) {
+            model.addRow(new Object[]{
+                or.getOvertimeID(),
+                or.getDate(),
+                or.getOvertimeWorkDate(),
+                or.getOvertimeHours(),
+                or.getStatus()
+            });
+        }
+    }
+    
+    private void onViewClicked() {
+        int row = jTableOvertimeHistory.getSelectedRow();
+        if (row < 0) {
+            UIUtil.showWarningMessage(this, "Please select an overtime request to view.", "No Selection");
+            return;
+        }
+
+        int overtimeID = (int) jTableOvertimeHistory.getValueAt(row, 0);
+        employeePortal.getViewOvertimePanel().loadSelectedOvertime(overtimeID);
+
+        CardLayout cardLayout = (CardLayout) employeePortal.getPanelParentCard().getLayout();
+        cardLayout.show(employeePortal.getPanelParentCard(), "ViewOvertime");
+    }
+    
+    private void handleSubmitOvertime() {
+        Date selectedDate = jDateChooserOvertimeDate.getDate();
+        String selectedHours = (String) jComboBoxOvertimeHours.getSelectedItem();
+        String reason = jTextAreaReason.getText().trim();
+
+        if (selectedDate == null || "Select".equals(selectedHours)) {
+            UIUtil.showWarningMessage(this, "Please complete all required fields.", "Missing Fields");
+            return;
+        }
+
+        // Parse and validate hours
+        double hours;
+        try {
+            hours = Double.parseDouble(selectedHours);
+            if (hours <= 0) {
+                throw new NumberFormatException();
+            }
+        } catch (NumberFormatException ex) {
+            UIUtil.showErrorMessage(this, "Invalid number of overtime hours.", "Invalid Hours");
+            return;
+        }
+
+        // Convert date and validate against today
+        LocalDate workDate = selectedDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        LocalDate today = LocalDate.now();
+
+        if (workDate.isBefore(today)) {
+            UIUtil.showErrorMessage(this, "Overtime date cannot be in the past.", "Invalid Date");
+            return;
+        }
+
+        // Submit via service
+        RequestService requestService = new RequestService();
+        try {
+            int empId = Session.getCurrentUser().getEmployeeID();
+            requestService.submitOvertimeRequest(empId, workDate, hours, reason);
+
+            UIUtil.showInfoMessage(this, "Overtime request submitted successfully!", "Success");
+
+            // Refresh history table
+            loadOvertimeHistory();
+
+            // Once submission is successful, clear fields and refresh Employee Dashboard
+            jDateChooserOvertimeDate.setDate(null);
+            jComboBoxOvertimeHours.setSelectedIndex(0);
+            jTextAreaReason.setText("");
+
+            EmployeeDashboardPanel employeeDashboard = employeePortal.getEmployeeDashboardPanel();
+            employeeDashboard.loadMetrics();
+
+        } catch (Exception ex) {
+            UIUtil.showErrorMessage(this, ex.getMessage(), "Submission Failed");
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -46,7 +154,7 @@ public class OvertimePanel extends javax.swing.JPanel {
         jLabelHelloEmployee.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         jLabelHelloEmployee.setText("Hello, Employee!");
         jPanel1.add(jLabelHelloEmployee);
-        jLabelHelloEmployee.setBounds(30, 30, 210, 29);
+        jLabelHelloEmployee.setBounds(30, 30, 690, 29);
 
         jLabelOvertimeSmall.setText("Overtime");
         jPanel1.add(jLabelOvertimeSmall);
@@ -71,7 +179,7 @@ public class OvertimePanel extends javax.swing.JPanel {
         jLabelOvertimeHours.setBounds(20, 80, 140, 40);
 
         jComboBoxOvertimeHours.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        jComboBoxOvertimeHours.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Select", "1 hour", "2 hours", "3 hours", "4 hours", "5 hours", "6 hours", "7 hours", "8 hours" }));
+        jComboBoxOvertimeHours.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Select", "1.00", "2.00", "3.00", "4.00", "5.00", "6.00", "7.00", "8.00" }));
         jComboBoxOvertimeHours.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jComboBoxOvertimeHoursActionPerformed(evt);
@@ -210,12 +318,12 @@ public class OvertimePanel extends javax.swing.JPanel {
 
     private void jButtonSubmitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonSubmitActionPerformed
         // TODO add your handling code here:
+        handleSubmitOvertime();
     }//GEN-LAST:event_jButtonSubmitActionPerformed
 
     private void jButtonViewActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonViewActionPerformed
         // TODO add your handling code here:
-        CardLayout cardLayout = (CardLayout) employeePortal.getPanelParentCard().getLayout();
-        cardLayout.show(employeePortal.getPanelParentCard(), "ViewOvertime");
+        onViewClicked();
     }//GEN-LAST:event_jButtonViewActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

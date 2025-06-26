@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-
 public class Payslip {
     private int payslipID;
     private int employeeID;
@@ -62,6 +61,10 @@ public class Payslip {
         this.netIncome = netIncome;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+    }
+
+    public Payslip() {
+
     }
 
     public int getPayslipID() {

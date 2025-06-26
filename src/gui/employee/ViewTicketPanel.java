@@ -1,14 +1,50 @@
 package gui.employee;
 
 import java.awt.CardLayout;
+import java.time.format.DateTimeFormatter;
+import model.pojo.EmployeeView;
+import model.pojo.SupportRequest;
+import service.RequestService;
+import util.UIUtil;
 
 public class ViewTicketPanel extends javax.swing.JPanel {
     
     private final EmployeePortal employeePortal;
+    private final RequestService requestService;
 
     public ViewTicketPanel(EmployeePortal employeePortal) {
         this.employeePortal = employeePortal;
+        this.requestService = new RequestService();
         initComponents();
+        UIUtil.setGreeting(jLabelHelloEmployee, "Employee");
+    }
+    
+    public void loadSelectedTicket(int ticketID) {
+        SupportRequest sr = requestService.getSupportDetails(ticketID);
+        if (sr == null) {
+            return;
+        }
+        
+        EmployeeView efd = requestService.getEmployeeDetails(sr.getEmployeeID());
+
+        jTextFieldTicketID.setText(String.valueOf(sr.getTicketID()));
+        DateTimeFormatter dateFmt = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        jTextFieldRequestDate.setText(sr.getDate().format(dateFmt));
+        jTextFieldEmployeeID.setText(String.valueOf(sr.getEmployeeID()));
+        jTextFieldFullName.setText(efd.getFirstName() + " " + efd.getLastName());
+        jTextFieldPosition.setText(efd.getPositionTitle());
+        jTextFieldDepartment.setText(efd.getDepartmentName());
+        jTextFieldAssignedTeam.setText(sr.getAssignedTeam());
+        jTextFieldSeverity.setText(sr.getSeverity());
+        jTextFieldSubject.setText(sr.getSubject());
+        jTextAreaIssueDescription.setText(sr.getDescription());
+        if (sr.getResolvedBy() != null) {
+            String resolverName = requestService.getUserFullName(sr.getResolvedBy());
+            jTextFieldResolvedBy.setText(resolverName);
+        } else {
+            jTextFieldResolvedBy.setText("");
+        }
+        jTextFieldStatus.setText(sr.getStatus());
     }
 
     @SuppressWarnings("unchecked")
@@ -28,7 +64,7 @@ public class ViewTicketPanel extends javax.swing.JPanel {
         jTextFieldDepartment = new javax.swing.JTextField();
         jTextFieldPosition = new javax.swing.JTextField();
         jTextFieldFullName = new javax.swing.JTextField();
-        jTextFieldEmployeeNumber = new javax.swing.JTextField();
+        jTextFieldEmployeeID = new javax.swing.JTextField();
         jTextFieldRequestDate = new javax.swing.JTextField();
         jTextFieldTicketID = new javax.swing.JTextField();
         jLabelAssignedTeam = new javax.swing.JLabel();
@@ -58,7 +94,7 @@ public class ViewTicketPanel extends javax.swing.JPanel {
         jLabelHelloEmployee.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         jLabelHelloEmployee.setText("Hello, Employee!");
         jPanel1.add(jLabelHelloEmployee);
-        jLabelHelloEmployee.setBounds(30, 30, 210, 29);
+        jLabelHelloEmployee.setBounds(30, 30, 600, 29);
 
         jLabelViewTicketSmall.setText("Support > View Record");
         jPanel1.add(jLabelViewTicketSmall);
@@ -88,7 +124,7 @@ public class ViewTicketPanel extends javax.swing.JPanel {
         jLabelEmployeeNumber.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         jLabelEmployeeNumber.setForeground(new java.awt.Color(0, 0, 0));
         jLabelEmployeeNumber.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        jLabelEmployeeNumber.setText("Employee # :");
+        jLabelEmployeeNumber.setText("Employee ID :");
         jPanelLeaveRequestBox.add(jLabelEmployeeNumber);
         jLabelEmployeeNumber.setBounds(30, 240, 290, 40);
 
@@ -116,6 +152,7 @@ public class ViewTicketPanel extends javax.swing.JPanel {
         jPanelLeaveRequestBox.add(jLabelDepartment);
         jLabelDepartment.setBounds(30, 360, 290, 40);
 
+        jTextFieldDepartment.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldDepartment.setEnabled(false);
         jTextFieldDepartment.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -125,6 +162,7 @@ public class ViewTicketPanel extends javax.swing.JPanel {
         jPanelLeaveRequestBox.add(jTextFieldDepartment);
         jTextFieldDepartment.setBounds(180, 360, 350, 40);
 
+        jTextFieldPosition.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldPosition.setEnabled(false);
         jTextFieldPosition.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -134,6 +172,7 @@ public class ViewTicketPanel extends javax.swing.JPanel {
         jPanelLeaveRequestBox.add(jTextFieldPosition);
         jTextFieldPosition.setBounds(180, 320, 350, 40);
 
+        jTextFieldFullName.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldFullName.setEnabled(false);
         jTextFieldFullName.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -143,17 +182,17 @@ public class ViewTicketPanel extends javax.swing.JPanel {
         jPanelLeaveRequestBox.add(jTextFieldFullName);
         jTextFieldFullName.setBounds(180, 280, 350, 40);
 
-        jTextFieldEmployeeNumber.setDisabledTextColor(new java.awt.Color(255, 255, 255));
-        jTextFieldEmployeeNumber.setEnabled(false);
-        jTextFieldEmployeeNumber.addActionListener(new java.awt.event.ActionListener() {
+        jTextFieldEmployeeID.setDisabledTextColor(new java.awt.Color(0, 0, 0));
+        jTextFieldEmployeeID.setEnabled(false);
+        jTextFieldEmployeeID.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jTextFieldEmployeeNumberActionPerformed(evt);
+                jTextFieldEmployeeIDActionPerformed(evt);
             }
         });
-        jPanelLeaveRequestBox.add(jTextFieldEmployeeNumber);
-        jTextFieldEmployeeNumber.setBounds(180, 240, 350, 40);
+        jPanelLeaveRequestBox.add(jTextFieldEmployeeID);
+        jTextFieldEmployeeID.setBounds(180, 240, 350, 40);
 
-        jTextFieldRequestDate.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldRequestDate.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldRequestDate.setEnabled(false);
         jTextFieldRequestDate.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -163,7 +202,7 @@ public class ViewTicketPanel extends javax.swing.JPanel {
         jPanelLeaveRequestBox.add(jTextFieldRequestDate);
         jTextFieldRequestDate.setBounds(180, 200, 350, 40);
 
-        jTextFieldTicketID.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldTicketID.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldTicketID.setEnabled(false);
         jTextFieldTicketID.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -231,6 +270,7 @@ public class ViewTicketPanel extends javax.swing.JPanel {
         jPanelLeaveRequestBox.add(jLabelBack);
         jLabelBack.setBounds(0, 560, 60, 60);
 
+        jTextFieldStatus.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldStatus.setEnabled(false);
         jTextFieldStatus.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -240,6 +280,7 @@ public class ViewTicketPanel extends javax.swing.JPanel {
         jPanelLeaveRequestBox.add(jTextFieldStatus);
         jTextFieldStatus.setBounds(690, 360, 350, 40);
 
+        jTextFieldResolvedBy.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldResolvedBy.setEnabled(false);
         jTextFieldResolvedBy.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -252,12 +293,14 @@ public class ViewTicketPanel extends javax.swing.JPanel {
         jTextAreaIssueDescription.setColumns(20);
         jTextAreaIssueDescription.setLineWrap(true);
         jTextAreaIssueDescription.setRows(5);
+        jTextAreaIssueDescription.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextAreaIssueDescription.setEnabled(false);
         jScrollPane1.setViewportView(jTextAreaIssueDescription);
 
         jPanelLeaveRequestBox.add(jScrollPane1);
         jScrollPane1.setBounds(690, 280, 350, 40);
 
+        jTextFieldSubject.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldSubject.setEnabled(false);
         jTextFieldSubject.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -267,6 +310,7 @@ public class ViewTicketPanel extends javax.swing.JPanel {
         jPanelLeaveRequestBox.add(jTextFieldSubject);
         jTextFieldSubject.setBounds(690, 240, 350, 40);
 
+        jTextFieldSeverity.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldSeverity.setEnabled(false);
         jTextFieldSeverity.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -276,6 +320,7 @@ public class ViewTicketPanel extends javax.swing.JPanel {
         jPanelLeaveRequestBox.add(jTextFieldSeverity);
         jTextFieldSeverity.setBounds(690, 200, 350, 40);
 
+        jTextFieldAssignedTeam.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldAssignedTeam.setEnabled(false);
         jTextFieldAssignedTeam.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -303,9 +348,9 @@ public class ViewTicketPanel extends javax.swing.JPanel {
         // TODO add your handling code here:
     }//GEN-LAST:event_jTextFieldFullNameActionPerformed
 
-    private void jTextFieldEmployeeNumberActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldEmployeeNumberActionPerformed
+    private void jTextFieldEmployeeIDActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldEmployeeIDActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jTextFieldEmployeeNumberActionPerformed
+    }//GEN-LAST:event_jTextFieldEmployeeIDActionPerformed
 
     private void jTextFieldRequestDateActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldRequestDateActionPerformed
         // TODO add your handling code here:
@@ -363,7 +408,7 @@ public class ViewTicketPanel extends javax.swing.JPanel {
     private javax.swing.JTextArea jTextAreaIssueDescription;
     private javax.swing.JTextField jTextFieldAssignedTeam;
     private javax.swing.JTextField jTextFieldDepartment;
-    private javax.swing.JTextField jTextFieldEmployeeNumber;
+    private javax.swing.JTextField jTextFieldEmployeeID;
     private javax.swing.JTextField jTextFieldFullName;
     private javax.swing.JTextField jTextFieldPosition;
     private javax.swing.JTextField jTextFieldRequestDate;

@@ -3,7 +3,6 @@ package model.pojo;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-
 public class Salary {
     private int salaryID;
     private BigDecimal basicSalary;
@@ -19,6 +18,10 @@ public class Salary {
         this.hourlyRate = hourlyRate;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+    }
+
+    public Salary() {
+        
     }
 
     public int getSalaryID() {

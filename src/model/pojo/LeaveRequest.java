@@ -3,21 +3,32 @@ package model.pojo;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-
 public class LeaveRequest extends Request {
+    private int leaveID;
     private int leaveTypeID;
     private LocalDate startDate;
     private LocalDate endDate;
     private int leaveDays;
     private String reason;
+    private Integer approvedBy;
 
-    public LeaveRequest(int leaveTypeID, LocalDate startDate, LocalDate endDate, int leaveDays, String reason, int requestID, int employeeID, LocalDate date, String status, Integer approvedOrResolvedBy, LocalDateTime createdAt, LocalDateTime updatedAt) {
-        super(requestID, employeeID, date, status, approvedOrResolvedBy, createdAt, updatedAt);
+    public LeaveRequest(int leaveID, int leaveTypeID, LocalDate startDate, LocalDate endDate, int leaveDays, String reason, Integer approvedBy, int employeeID, LocalDate date, String status, LocalDateTime createdAt, LocalDateTime updatedAt) {
+        super(employeeID, date, status, createdAt, updatedAt);
+        this.leaveID = leaveID;
         this.leaveTypeID = leaveTypeID;
         this.startDate = startDate;
         this.endDate = endDate;
         this.leaveDays = leaveDays;
         this.reason = reason;
+        this.approvedBy = approvedBy;
+    }
+
+    public LeaveRequest() {
+        
+    }
+
+    public int getLeaveID() {
+        return leaveID;
     }
 
     public int getLeaveTypeID() {
@@ -40,9 +51,8 @@ public class LeaveRequest extends Request {
         return reason;
     }
 
-    @Override
-    public int getRequestID() {
-        return requestID;
+    public Integer getApprovedBy() {
+        return approvedBy;
     }
 
     @Override
@@ -61,11 +71,6 @@ public class LeaveRequest extends Request {
     }
 
     @Override
-    public Integer getApprovedOrResolvedBy() {
-        return approvedOrResolvedBy;
-    }
-
-    @Override
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -73,6 +78,10 @@ public class LeaveRequest extends Request {
     @Override
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
+    }
+
+    public void setLeaveID(int leaveID) {
+        this.leaveID = leaveID;
     }
 
     public void setLeaveTypeID(int leaveTypeID) {
@@ -95,9 +104,8 @@ public class LeaveRequest extends Request {
         this.reason = reason;
     }
 
-    @Override
-    public void setRequestID(int requestID) {
-        this.requestID = requestID;
+    public void setApprovedBy(Integer approvedBy) {
+        this.approvedBy = approvedBy;
     }
 
     @Override
@@ -116,11 +124,6 @@ public class LeaveRequest extends Request {
     }
 
     @Override
-    public void setApprovedOrResolvedBy(Integer approvedOrResolvedBy) {
-        this.approvedOrResolvedBy = approvedOrResolvedBy;
-    }
-
-    @Override
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
@@ -129,5 +132,5 @@ public class LeaveRequest extends Request {
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
     }
-    
+
 }

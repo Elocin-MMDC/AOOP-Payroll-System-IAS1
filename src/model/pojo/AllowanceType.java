@@ -1,6 +1,5 @@
 package model.pojo;
 
-
 public class AllowanceType {
     private int allowanceTypeID;
     private String allowanceName;
@@ -8,6 +7,10 @@ public class AllowanceType {
     public AllowanceType(int allowanceTypeID, String allowanceName) {
         this.allowanceTypeID = allowanceTypeID;
         this.allowanceName = allowanceName;
+    }
+
+    public AllowanceType() {
+        
     }
 
     public int getAllowanceTypeID() {

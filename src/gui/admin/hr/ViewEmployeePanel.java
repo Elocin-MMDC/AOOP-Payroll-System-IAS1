@@ -1,16 +1,309 @@
 package gui.admin.hr;
 
 import java.awt.CardLayout;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import javax.swing.SwingWorker;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import model.pojo.Employee;
+import model.pojo.EmployeeViewForHR;
+import model.pojo.Gender;
+import model.pojo.Positions;
+import model.pojo.Role;
+import model.pojo.WorkStatus;
+import service.EmployeeService;
+import service.EmployeeService.ValidationException;
+import util.UIUtil;
 
 public class ViewEmployeePanel extends javax.swing.JPanel {
     
     private final AdminHRPortal hrPortal;
-
+    private final EmployeeService employeeService;
+    
     public ViewEmployeePanel(AdminHRPortal hrPortal) {
         this.hrPortal = hrPortal;
+        this.employeeService = new EmployeeService();
         initComponents();
+        UIUtil.setGreeting(jLabelHelloAdmin, "Admin");
+        UIUtil.applyAlphaFormat(jTextFieldLastName, jTextFieldFirstName, jTextFieldBarangay, jTextFieldCity, jTextFieldProvince);
+        UIUtil.applyPhoneNumberFormat(jTextFieldPhoneNumber);
+        UIUtil.applyStreetFormat(jTextFieldStreet);
+        UIUtil.applyZipCodeFormat(jTextFieldZipCode);
+        UIUtil.applySSSFormat(jTextFieldSssNumber);
+        UIUtil.apply12DigitFormat(jTextFieldPhilHealthNumber, jTextFieldPagIbigNumber);
+        UIUtil.applySalaryFormat(jTextFieldBasicSalary);
+        UIUtil.applyTINFormat(jTextFieldTin);
+        loadComboBoxes();
+        hookDynamicSalary();
+        hookPositionChanges();
+    }
+    
+    private void loadComboBoxes() {
+        // Gender
+        jComboBoxGender.removeAllItems();
+        jComboBoxGender.addItem("Select");
+        List<Gender> genders = employeeService.getAllGenderNames();
+        for (Gender gender : genders) {
+            jComboBoxGender.addItem(gender.getGenderName());
+        }
+        
+        // WorkStatus
+        jComboBoxWorkStatus.removeAllItems();
+        jComboBoxWorkStatus.addItem("Select");
+        List<WorkStatus> wses = employeeService.getAllWorkStatusNames();
+        for (WorkStatus ws : wses) {
+            jComboBoxWorkStatus.addItem(ws.getWorkStatusName());
+        }
+        
+        // Role
+        jComboBoxRole.removeAllItems();
+        jComboBoxRole.addItem("Select");
+        List<Role> roles = employeeService.getAllRoleNames();
+        for (Role r : roles) {
+            jComboBoxRole.addItem(r.getRoleName());
+        }
+        
+        // Position
+        jComboBoxPosition.removeAllItems();
+        jComboBoxPosition.addItem("Select");
+        List<Positions> positions = employeeService.getAllPositionTitles();
+        for (Positions p : positions) {
+            jComboBoxPosition.addItem(p.getPositionTitle());
+        }
+        
+        // Supervisor
+        jComboBoxSupervisor.removeAllItems();
+        jComboBoxSupervisor.addItem("Select");
+
+        List<Employee> supervisors = employeeService.getAllSupervisorNames();
+        for (Employee supervisor : supervisors) {
+            String fullName = supervisor.getFirstName() + " " + supervisor.getLastName();
+            jComboBoxSupervisor.addItem(fullName);
+        }
+        
+    }
+    
+    public void loadSelectedEmployee(int empId) {
+        EmployeeViewForHR e = employeeService.getEmpHRViewById(empId);
+        if (e == null) {
+            return;
+        }
+        // Basic info
+        jTextFieldEmployeeID.setText(String.valueOf(e.getEmployeeID()));
+        jTextFieldLastName.setText(e.getLastName());
+        jTextFieldFirstName.setText(e.getFirstName());
+        jComboBoxGender.setSelectedItem(e.getGender());
+        jComboBoxWorkStatus.setSelectedItem(e.getWorkStatus());
+        jComboBoxRole.setSelectedItem(e.getRole());
+        jComboBoxPosition.setSelectedItem(e.getPositionTitle());
+        jTextFieldDepartment.setText(e.getDepartmentName());
+        String supervisorName = e.getSupervisorName();
+        jComboBoxSupervisor.setSelectedItem(supervisorName != null ? supervisorName : "Select");
+        jDateChooserBirthday.setDate(java.sql.Date.valueOf(e.getBirthday()));
+        jTextFieldPhoneNumber.setText(e.getPhoneNumber());
+
+        // Address
+        jTextFieldStreet.setText(e.getStreet());
+        jTextFieldBarangay.setText(e.getBarangay());
+        jTextFieldCity.setText(e.getCity());
+        jTextFieldProvince.setText(e.getProvince());
+        jTextFieldZipCode.setText(e.getZipCode());
+
+        // GovInfo
+        jTextFieldSssNumber.setText(e.getSssNumber());
+        jTextFieldPhilHealthNumber.setText(e.getPhilHealthNumber());
+        jTextFieldTin.setText(e.getTin());
+        jTextFieldPagIbigNumber.setText(e.getPagIbigNumber());
+
+        // Compensation
+        jTextFieldBasicSalary.setText(e.getBasicSalary().toString());
+        jTextFieldSemiMonthlyRate.setText(e.getSemiMonthlyRate().toString());
+        jTextFieldHourlyRate.setText(e.getHourlyRate().toString());
+        jTextFieldRiceSubsidy.setText(e.getRiceSubsidy().toString());
+        jTextFieldPhoneAllowance.setText(e.getPhoneAllowance().toString());
+        jTextFieldClothingAllowance.setText(e.getClothingAllowance().toString());
+    }
+    
+    private void hookDynamicSalary() {
+        // Semi-monthly rate and hourly rate recalculation based on basic salary value
+        jTextFieldBasicSalary.getDocument().addDocumentListener(new DocumentListener() {
+            private void updateRates() {
+                String txt = jTextFieldBasicSalary.getText().trim();
+                if (txt.isEmpty()) {
+                    jTextFieldSemiMonthlyRate.setText("");
+                    jTextFieldHourlyRate.setText("");
+                    return;
+                }
+                try {
+                    BigDecimal basic = new BigDecimal(txt);
+                    // semi-monthly rate = basic salary / 2
+                    BigDecimal semiMonthlyRate = basic.divide(BigDecimal.valueOf(2), 2, RoundingMode.HALF_UP);
+                    // hourly rate = basic salary / 21 / 8 (21 working days, 8 hrs per day)
+                    BigDecimal hourlyRate = basic.divide(BigDecimal.valueOf(168), 2, RoundingMode.HALF_UP);
+
+                    jTextFieldSemiMonthlyRate.setText(semiMonthlyRate.toPlainString());
+                    jTextFieldHourlyRate.setText(hourlyRate.toPlainString());
+                } catch (NumberFormatException ex) {
+                    jTextFieldSemiMonthlyRate.setText("");
+                    jTextFieldHourlyRate.setText("");
+                }
+            }
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                updateRates();
+            }
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                updateRates();
+            }
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                updateRates();
+            }
+        });
+    }
+    
+    private void hookPositionChanges() {
+        jComboBoxPosition.addActionListener(e -> {
+            String selectedPosition = (String) jComboBoxPosition.getSelectedItem();
+            if (selectedPosition == null || selectedPosition.isEmpty()) {
+                clearDependentFields();
+                return;
+            }
+
+            new SwingWorker<Void, Void>() {
+                private String department;
+                private Map<String, BigDecimal> allowances;
+
+                @Override
+                protected Void doInBackground() throws Exception {
+                    department = employeeService.getDepartmentNameByPosition(selectedPosition);
+                    allowances = employeeService.getAllowancesByPosition(selectedPosition);
+                    return null;
+                }
+
+                @Override
+                protected void done() {
+                    jTextFieldDepartment.setText(department != null ? department : "");
+                    jTextFieldRiceSubsidy.setText(allowances.getOrDefault("Rice Subsidy", BigDecimal.ZERO).toString());
+                    jTextFieldPhoneAllowance.setText(allowances.getOrDefault("Phone Allowance", BigDecimal.ZERO).toString());
+                    jTextFieldClothingAllowance.setText(allowances.getOrDefault("Clothing Allowance", BigDecimal.ZERO).toString());
+                }
+            }.execute();
+        });
     }
 
+    private void clearDependentFields() {
+        jTextFieldDepartment.setText("");
+        jTextFieldRiceSubsidy.setText("");
+        jTextFieldPhoneAllowance.setText("");
+        jTextFieldClothingAllowance.setText("");
+    }
+    
+    private void deleteEmployee() {
+        String empIdText = jTextFieldEmployeeID.getText().trim();
+
+        if (empIdText.isEmpty()) {
+            UIUtil.showErrorMessage(this, "No employee selected to delete.", "Missing Employee ID");
+            return;
+        }
+
+        int employeeID;
+        try {
+            employeeID = Integer.parseInt(empIdText);
+        } catch (NumberFormatException e) {
+            UIUtil.showErrorMessage(this, "Invalid employee ID format.", "Error");
+            return;
+        }
+        
+        if (!UIUtil.showConfirmation(this, "Are you sure you want to delete this employee?")) {
+            return;
+        }
+
+        boolean success = employeeService.softDeleteEmployee(employeeID);
+
+        if (success) {
+            UIUtil.showInfoMessage(this, "Employee deleted successfully.", "Success");
+            hrPortal.getEmployeesPanel().loadEmployeeRecords();
+            CardLayout cardLayout = (CardLayout) hrPortal.getPanelParentCard().getLayout();
+            cardLayout.show(hrPortal.getPanelParentCard(), "Employees");
+        } else {
+            UIUtil.showErrorMessage(this, "Failed to delete employee.", "Error");
+        }
+    }
+    
+    private void updateEmployee() {
+        try {
+            int employeeID = Integer.parseInt(jTextFieldEmployeeID.getText().trim());
+
+            String lastName = jTextFieldLastName.getText().trim();
+            String firstName = jTextFieldFirstName.getText().trim();
+            String genderName = (String) jComboBoxGender.getSelectedItem();
+            Date date = jDateChooserBirthday.getDate();
+
+            if (lastName.isEmpty() || firstName.isEmpty() || genderName.equals("Select") || date == null
+                    || jTextFieldPhoneNumber.getText().trim().isEmpty() || jTextFieldStreet.getText().trim().isEmpty()
+                    || jTextFieldCity.getText().trim().isEmpty()
+                    || ((String) jComboBoxWorkStatus.getSelectedItem()).equals("Select")
+                    || ((String) jComboBoxRole.getSelectedItem()).equals("Select")
+                    || ((String) jComboBoxPosition.getSelectedItem()).equals("Select")
+                    || jTextFieldSssNumber.getText().trim().isEmpty() || jTextFieldPhilHealthNumber.getText().trim().isEmpty()
+                    || jTextFieldTin.getText().trim().isEmpty() || jTextFieldPagIbigNumber.getText().trim().isEmpty()
+                    || jTextFieldBasicSalary.getText().trim().isEmpty()) {
+
+                UIUtil.showErrorMessage(this, "Please fill out all required fields.", "Error");
+                return;
+            }
+
+            LocalDate birthday = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+            String phoneNumber = jTextFieldPhoneNumber.getText().trim();
+            String street = jTextFieldStreet.getText().trim();
+            String barangay = jTextFieldBarangay.getText().trim();
+            String city = jTextFieldCity.getText().trim();
+            String province = jTextFieldProvince.getText().trim();
+            String zipCode = jTextFieldZipCode.getText().trim();
+
+            String workStatusName = (String) jComboBoxWorkStatus.getSelectedItem();
+            String roleName = (String) jComboBoxRole.getSelectedItem();
+            String positionTitle = (String) jComboBoxPosition.getSelectedItem();
+            String supervisorFullName = (String) jComboBoxSupervisor.getSelectedItem();
+
+            String sssNumber = jTextFieldSssNumber.getText().trim();
+            String philHealthNumber = jTextFieldPhilHealthNumber.getText().trim();
+            String tin = jTextFieldTin.getText().trim();
+            String pagIbigNumber = jTextFieldPagIbigNumber.getText().trim();
+
+            BigDecimal basicSalary = new BigDecimal(jTextFieldBasicSalary.getText().trim());
+            BigDecimal semiMonthlyRate = new BigDecimal(jTextFieldSemiMonthlyRate.getText().trim());
+            BigDecimal hourlyRate = new BigDecimal(jTextFieldHourlyRate.getText().trim());
+
+            boolean success = employeeService.updateEmployee(
+                    employeeID,
+                    lastName, firstName, birthday, phoneNumber, genderName,
+                    street, barangay, city, province, zipCode,
+                    workStatusName, roleName, positionTitle, supervisorFullName, 
+                    sssNumber, philHealthNumber, tin, pagIbigNumber,
+                    basicSalary, semiMonthlyRate, hourlyRate
+            );
+
+            if (success) {
+                UIUtil.showInfoMessage(this, "Employee updated successfully.", "Success");
+                hrPortal.getEmployeesPanel().loadEmployeeRecords();
+            }
+
+        } catch (ValidationException ve) {
+            UIUtil.showErrorMessage(this, ve.getMessage(), "Error");
+        } catch (Exception e) {
+            UIUtil.showErrorMessage(this, "An unexpected error occurred. Please try again.", "Error");
+        }
+    }
+ 
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
@@ -45,11 +338,10 @@ public class ViewEmployeePanel extends javax.swing.JPanel {
         jLabelFirstName = new javax.swing.JLabel();
         jLabelEmployeeDateOfBirth = new javax.swing.JLabel();
         jLabelPhoneNumber = new javax.swing.JLabel();
-        jLabelSupervisor = new javax.swing.JLabel();
         jComboBoxSupervisor = new javax.swing.JComboBox<>();
         jDateChooserBirthday = new com.toedter.calendar.JDateChooser();
         jLabelSemiMonthlyRate = new javax.swing.JLabel();
-        jTextFieldBasicSalary1 = new javax.swing.JTextField();
+        jTextFieldBasicSalary = new javax.swing.JTextField();
         jLabelGender = new javax.swing.JLabel();
         jComboBoxGender = new javax.swing.JComboBox<>();
         jLabelBack = new javax.swing.JLabel();
@@ -80,7 +372,6 @@ public class ViewEmployeePanel extends javax.swing.JPanel {
         jLabelAsterisk12 = new javax.swing.JLabel();
         jLabelAsterisk13 = new javax.swing.JLabel();
         jLabelAsterisk14 = new javax.swing.JLabel();
-        jLabelAsterisk15 = new javax.swing.JLabel();
         jLabelAsterisk16 = new javax.swing.JLabel();
         jLabelAsterisk20 = new javax.swing.JLabel();
         jLabelAsterisk17 = new javax.swing.JLabel();
@@ -91,6 +382,7 @@ public class ViewEmployeePanel extends javax.swing.JPanel {
         jTextFieldEmployeeID = new javax.swing.JTextField();
         jButtonUpdate = new javax.swing.JButton();
         jButtonDelete = new javax.swing.JButton();
+        jLabelSupervisor = new javax.swing.JLabel();
 
         setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
@@ -104,7 +396,7 @@ public class ViewEmployeePanel extends javax.swing.JPanel {
         jLabelHelloAdmin.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         jLabelHelloAdmin.setText("Hello, Admin!");
         jPanel1.add(jLabelHelloAdmin);
-        jLabelHelloAdmin.setBounds(30, 30, 137, 29);
+        jLabelHelloAdmin.setBounds(30, 30, 590, 29);
 
         jLabelViewRecordSmall.setText("Employees > View Record");
         jPanel1.add(jLabelViewRecordSmall);
@@ -213,7 +505,7 @@ public class ViewEmployeePanel extends javax.swing.JPanel {
         jTextFieldPagIbigNumber.setBounds(710, 260, 330, 40);
 
         jTextFieldSemiMonthlyRate.setBackground(new java.awt.Color(240, 240, 240));
-        jTextFieldSemiMonthlyRate.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldSemiMonthlyRate.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldSemiMonthlyRate.setEnabled(false);
         jTextFieldSemiMonthlyRate.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -224,6 +516,7 @@ public class ViewEmployeePanel extends javax.swing.JPanel {
         jTextFieldSemiMonthlyRate.setBounds(710, 340, 330, 40);
 
         jTextFieldHourlyRate.setBackground(new java.awt.Color(240, 240, 240));
+        jTextFieldHourlyRate.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldHourlyRate.setEnabled(false);
         jTextFieldHourlyRate.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -234,7 +527,7 @@ public class ViewEmployeePanel extends javax.swing.JPanel {
         jTextFieldHourlyRate.setBounds(710, 380, 330, 40);
 
         jTextFieldRiceSubsidy.setBackground(new java.awt.Color(240, 240, 240));
-        jTextFieldRiceSubsidy.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldRiceSubsidy.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldRiceSubsidy.setEnabled(false);
         jTextFieldRiceSubsidy.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -245,6 +538,7 @@ public class ViewEmployeePanel extends javax.swing.JPanel {
         jTextFieldRiceSubsidy.setBounds(710, 420, 330, 40);
 
         jTextFieldPhoneAllowance.setBackground(new java.awt.Color(240, 240, 240));
+        jTextFieldPhoneAllowance.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldPhoneAllowance.setEnabled(false);
         jTextFieldPhoneAllowance.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -255,7 +549,7 @@ public class ViewEmployeePanel extends javax.swing.JPanel {
         jTextFieldPhoneAllowance.setBounds(710, 460, 330, 40);
 
         jTextFieldClothingAllowance.setBackground(new java.awt.Color(240, 240, 240));
-        jTextFieldClothingAllowance.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldClothingAllowance.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldClothingAllowance.setEnabled(false);
         jTextFieldClothingAllowance.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -292,7 +586,7 @@ public class ViewEmployeePanel extends javax.swing.JPanel {
         jTextFieldLastName.setBounds(170, 60, 350, 40);
 
         jTextFieldDepartment.setBackground(new java.awt.Color(240, 240, 240));
-        jTextFieldDepartment.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldDepartment.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldDepartment.setEnabled(false);
         jTextFieldDepartment.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -342,16 +636,8 @@ public class ViewEmployeePanel extends javax.swing.JPanel {
         jPanelCreateNewEmployeeBox.add(jLabelPhoneNumber);
         jLabelPhoneNumber.setBounds(20, 220, 290, 40);
 
-        jLabelSupervisor.setBackground(new java.awt.Color(255, 255, 255));
-        jLabelSupervisor.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
-        jLabelSupervisor.setForeground(new java.awt.Color(0, 0, 0));
-        jLabelSupervisor.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        jLabelSupervisor.setText("Supervisor   :");
-        jPanelCreateNewEmployeeBox.add(jLabelSupervisor);
-        jLabelSupervisor.setBounds(560, 100, 270, 40);
-
         jComboBoxSupervisor.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        jComboBoxSupervisor.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Select", "N/A", "Garcia, Manuel III", "Lim, Antonio", "Villanueva, Andrea Mae", "San, Jose Brad", "Aquino, Bianca Sofia ", "Alvaro, Roderick", "Salcedo, Anthony", "Lim, Antonio", "Romualdez, Fredrick ", "Mata, Christian", "De Leon, Selena", "Reyes, Isabella" }));
+        jComboBoxSupervisor.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Select" }));
         jComboBoxSupervisor.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jComboBoxSupervisorActionPerformed(evt);
@@ -372,14 +658,14 @@ public class ViewEmployeePanel extends javax.swing.JPanel {
         jPanelCreateNewEmployeeBox.add(jLabelSemiMonthlyRate);
         jLabelSemiMonthlyRate.setBounds(560, 340, 270, 40);
 
-        jTextFieldBasicSalary1.setDisabledTextColor(new java.awt.Color(255, 255, 255));
-        jTextFieldBasicSalary1.addActionListener(new java.awt.event.ActionListener() {
+        jTextFieldBasicSalary.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldBasicSalary.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jTextFieldBasicSalary1ActionPerformed(evt);
+                jTextFieldBasicSalaryActionPerformed(evt);
             }
         });
-        jPanelCreateNewEmployeeBox.add(jTextFieldBasicSalary1);
-        jTextFieldBasicSalary1.setBounds(710, 300, 330, 40);
+        jPanelCreateNewEmployeeBox.add(jTextFieldBasicSalary);
+        jTextFieldBasicSalary.setBounds(710, 300, 330, 40);
 
         jLabelGender.setBackground(new java.awt.Color(255, 255, 255));
         jLabelGender.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
@@ -390,7 +676,7 @@ public class ViewEmployeePanel extends javax.swing.JPanel {
         jLabelGender.setBounds(20, 140, 290, 40);
 
         jComboBoxGender.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        jComboBoxGender.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Select", "Male", "Female" }));
+        jComboBoxGender.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Select" }));
         jComboBoxGender.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jComboBoxGenderActionPerformed(evt);
@@ -503,7 +789,7 @@ public class ViewEmployeePanel extends javax.swing.JPanel {
         jLabelWorkStatus.setBounds(20, 460, 290, 40);
 
         jComboBoxWorkStatus.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        jComboBoxWorkStatus.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Select", "Regular", "Probationary" }));
+        jComboBoxWorkStatus.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Select" }));
         jComboBoxWorkStatus.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jComboBoxWorkStatusActionPerformed(evt);
@@ -529,7 +815,7 @@ public class ViewEmployeePanel extends javax.swing.JPanel {
         jLabelPosition.setBounds(560, 20, 270, 40);
 
         jComboBoxPosition.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        jComboBoxPosition.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Select", "Chief Executive Officer", "Chief Operating Officer", "Chief Finance Officer", "Chief Marketing Officer", "IT Operations and Systems", "HR Manager", "HR Team Leader", "HR Rank and File", "Accounting Head", "Payroll Manager", "Payroll Team Leader", "Payroll Rank and File", "Account Manager", "Account Team Leader", "Account Rank and File", "Sales & Marketing", "Supply Chain and Logistics", "Customer Service and Relations" }));
+        jComboBoxPosition.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Select" }));
         jComboBoxPosition.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jComboBoxPositionActionPerformed(evt);
@@ -547,7 +833,7 @@ public class ViewEmployeePanel extends javax.swing.JPanel {
         jLabelRole.setBounds(20, 500, 290, 40);
 
         jComboBoxRole.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        jComboBoxRole.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Select", "Employee", "HR Admin", "Finance Admin", "IT Admin" }));
+        jComboBoxRole.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Select" }));
         jComboBoxRole.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jComboBoxRoleActionPerformed(evt);
@@ -636,14 +922,6 @@ public class ViewEmployeePanel extends javax.swing.JPanel {
         jPanelCreateNewEmployeeBox.add(jLabelAsterisk14);
         jLabelAsterisk14.setBounds(600, 10, 40, 50);
 
-        jLabelAsterisk15.setBackground(new java.awt.Color(255, 255, 255));
-        jLabelAsterisk15.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
-        jLabelAsterisk15.setForeground(new java.awt.Color(255, 0, 0));
-        jLabelAsterisk15.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabelAsterisk15.setText("*");
-        jPanelCreateNewEmployeeBox.add(jLabelAsterisk15);
-        jLabelAsterisk15.setBounds(610, 90, 50, 50);
-
         jLabelAsterisk16.setBackground(new java.awt.Color(255, 255, 255));
         jLabelAsterisk16.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         jLabelAsterisk16.setForeground(new java.awt.Color(255, 0, 0));
@@ -701,7 +979,7 @@ public class ViewEmployeePanel extends javax.swing.JPanel {
         jLabelSssNumber1.setBounds(710, 540, 330, 20);
 
         jTextFieldEmployeeID.setBackground(new java.awt.Color(240, 240, 240));
-        jTextFieldEmployeeID.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldEmployeeID.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldEmployeeID.setEnabled(false);
         jTextFieldEmployeeID.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -735,6 +1013,14 @@ public class ViewEmployeePanel extends javax.swing.JPanel {
         jPanelCreateNewEmployeeBox.add(jButtonDelete);
         jButtonDelete.setBounds(870, 570, 170, 40);
 
+        jLabelSupervisor.setBackground(new java.awt.Color(255, 255, 255));
+        jLabelSupervisor.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        jLabelSupervisor.setForeground(new java.awt.Color(0, 0, 0));
+        jLabelSupervisor.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        jLabelSupervisor.setText("Supervisor   :");
+        jPanelCreateNewEmployeeBox.add(jLabelSupervisor);
+        jLabelSupervisor.setBounds(560, 100, 270, 40);
+
         jPanel1.add(jPanelCreateNewEmployeeBox);
         jPanelCreateNewEmployeeBox.setBounds(30, 110, 1060, 640);
 
@@ -743,10 +1029,12 @@ public class ViewEmployeePanel extends javax.swing.JPanel {
 
     private void jButtonUpdateActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonUpdateActionPerformed
         // TODO add your handling code here:
+        updateEmployee();
     }//GEN-LAST:event_jButtonUpdateActionPerformed
 
     private void jButtonDeleteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonDeleteActionPerformed
         // TODO add your handling code here:
+        deleteEmployee();
     }//GEN-LAST:event_jButtonDeleteActionPerformed
 
     private void jTextFieldSssNumberActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldSssNumberActionPerformed
@@ -805,9 +1093,9 @@ public class ViewEmployeePanel extends javax.swing.JPanel {
         // TODO add your handling code here:
     }//GEN-LAST:event_jComboBoxSupervisorActionPerformed
 
-    private void jTextFieldBasicSalary1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldBasicSalary1ActionPerformed
+    private void jTextFieldBasicSalaryActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldBasicSalaryActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jTextFieldBasicSalary1ActionPerformed
+    }//GEN-LAST:event_jTextFieldBasicSalaryActionPerformed
 
     private void jComboBoxGenderActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxGenderActionPerformed
         // TODO add your handling code here:
@@ -869,7 +1157,6 @@ public class ViewEmployeePanel extends javax.swing.JPanel {
     private javax.swing.JLabel jLabelAsterisk12;
     private javax.swing.JLabel jLabelAsterisk13;
     private javax.swing.JLabel jLabelAsterisk14;
-    private javax.swing.JLabel jLabelAsterisk15;
     private javax.swing.JLabel jLabelAsterisk16;
     private javax.swing.JLabel jLabelAsterisk17;
     private javax.swing.JLabel jLabelAsterisk18;
@@ -913,7 +1200,7 @@ public class ViewEmployeePanel extends javax.swing.JPanel {
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanelCreateNewEmployeeBox;
     private javax.swing.JTextField jTextFieldBarangay;
-    private javax.swing.JTextField jTextFieldBasicSalary1;
+    private javax.swing.JTextField jTextFieldBasicSalary;
     private javax.swing.JTextField jTextFieldCity;
     private javax.swing.JTextField jTextFieldClothingAllowance;
     private javax.swing.JTextField jTextFieldDepartment;

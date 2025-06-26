@@ -2,7 +2,6 @@ package model.pojo;
 
 import java.math.BigDecimal;
 
-
 public class Allowance {
     private int allowanceID;
     private int allowanceTypeID;
@@ -14,6 +13,10 @@ public class Allowance {
         this.allowanceTypeID = allowanceTypeID;
         this.amount = amount;
         this.description = description;
+    }
+
+    public Allowance() {
+        
     }
 
     public int getAllowanceID() {

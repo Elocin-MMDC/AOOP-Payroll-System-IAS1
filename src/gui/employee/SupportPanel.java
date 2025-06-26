@@ -1,14 +1,105 @@
 package gui.employee;
 
 import java.awt.CardLayout;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
+import model.pojo.SupportRequest;
+import service.RequestService;
+import util.Session;
+import util.UIUtil;
 
 public class SupportPanel extends javax.swing.JPanel {
     
     private final EmployeePortal employeePortal;
+    private final RequestService requestService;
 
     public SupportPanel(EmployeePortal employeePortal) {
         this.employeePortal = employeePortal;
+        this.requestService = new RequestService();
         initComponents();
+        UIUtil.setGreeting(jLabelHelloEmployee, "Employee");
+        loadSupportHistory();
+    }
+    
+    private void loadSupportHistory() {
+        int empId = Session.getCurrentUser().getEmployeeID();
+        List<SupportRequest> history = requestService.getSupportHistory(empId);
+
+        String[] cols = {
+            "Ticket ID",
+            "Request Date",
+            "Assigned Team",
+            "Severity",
+            "Subject",
+            "Status"
+        };
+
+        UIUtil.styleTable(jTableTicketHistory, cols);
+        DefaultTableModel model = (DefaultTableModel) jTableTicketHistory.getModel();
+        model.setRowCount(0);
+
+        for (SupportRequest sr : history) {
+            model.addRow(new Object[]{
+                sr.getTicketID(),
+                sr.getDate(),
+                sr.getAssignedTeam(),
+                sr.getSeverity(),
+                sr.getSubject(),
+                sr.getStatus()
+            });
+        }
+    }
+    
+    private void onViewClicked() {
+        int row = jTableTicketHistory.getSelectedRow();
+        if (row < 0) {
+            UIUtil.showWarningMessage(this, "Please select a ticket to view.", "No Selection");
+            return;
+        }
+
+        int ticketID = (int) jTableTicketHistory.getValueAt(row, 0);
+        employeePortal.getViewTicketPanel().loadSelectedTicket(ticketID);
+
+        CardLayout cardLayout = (CardLayout) employeePortal.getPanelParentCard().getLayout();
+        cardLayout.show(employeePortal.getPanelParentCard(), "ViewTicket");
+    }
+    
+    private void handleSubmitTicket() {
+        String subject = jTextFieldSubject.getText().trim();
+        String severity = (String) jComboBoxSeverity.getSelectedItem();
+        String team = (String) jComboBoxAssignedTeam.getSelectedItem();
+        String description = jTextAreaDescription.getText().trim();
+
+        // Validate required fields
+        if (subject.isEmpty() || "Select".equals(severity) || "Select".equals(team) || description.isEmpty()) {
+            UIUtil.showWarningMessage(this, "All fields are required.", "Missing Fields");
+            return;
+        }
+
+        // Submit via service
+        RequestService requestService = new RequestService();
+        try {
+            int empId = Session.getCurrentUser().getEmployeeID();
+            requestService.submitSupportRequest(empId, team, severity, subject, description);
+            UIUtil.showInfoMessage(this, "Support ticket submitted successfully!", "Success");
+
+            // Refresh the history table
+            loadSupportHistory();
+
+            // Once submission is successful, clear fields and refresh Employee Dashboard
+            jTextFieldSubject.setText("");
+            jComboBoxSeverity.setSelectedIndex(0);
+            jComboBoxAssignedTeam.setSelectedIndex(0);
+            jTextAreaDescription.setText("");
+            
+            EmployeeDashboardPanel employeeDashboard = employeePortal.getEmployeeDashboardPanel();
+            employeeDashboard.loadMetrics();
+
+        } catch (Exception ex) {
+            UIUtil.showInfoMessage(this, ex.getMessage(), "Submission Failed");
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -50,7 +141,7 @@ public class SupportPanel extends javax.swing.JPanel {
         jLabelHelloEmployee.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         jLabelHelloEmployee.setText("Hello, Employee!");
         jPanel1.add(jLabelHelloEmployee);
-        jLabelHelloEmployee.setBounds(30, 30, 210, 29);
+        jLabelHelloEmployee.setBounds(30, 30, 530, 29);
 
         jLabelSupportSmall.setText("Support");
         jPanel1.add(jLabelSupportSmall);
@@ -252,6 +343,7 @@ public class SupportPanel extends javax.swing.JPanel {
 
     private void jButtonSubmitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonSubmitActionPerformed
         // TODO add your handling code here:
+        handleSubmitTicket();
     }//GEN-LAST:event_jButtonSubmitActionPerformed
 
     private void jTextFieldSubjectActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldSubjectActionPerformed
@@ -260,8 +352,7 @@ public class SupportPanel extends javax.swing.JPanel {
 
     private void jButtonViewActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonViewActionPerformed
         // TODO add your handling code here:
-        CardLayout cardLayout = (CardLayout) employeePortal.getPanelParentCard().getLayout();
-        cardLayout.show(employeePortal.getPanelParentCard(), "ViewTicket");
+        onViewClicked();
     }//GEN-LAST:event_jButtonViewActionPerformed
 
     private void jComboBoxSeverityActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxSeverityActionPerformed

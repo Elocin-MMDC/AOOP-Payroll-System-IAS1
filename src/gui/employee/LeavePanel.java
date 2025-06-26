@@ -1,14 +1,223 @@
 package gui.employee;
 
 import java.awt.CardLayout;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import javax.swing.table.DefaultTableModel;
+import model.pojo.EmployeeView;
+import model.pojo.LeaveBalance;
+import model.pojo.LeaveRequest;
+import model.pojo.LeaveType;
+import service.RequestService;
+import util.Session;
+import util.UIUtil;
 
 public class LeavePanel extends javax.swing.JPanel {
     
     private final EmployeePortal employeePortal;
+    private final RequestService requestService;
 
     public LeavePanel(EmployeePortal employeePortal) {
         this.employeePortal = employeePortal;
+        this.requestService = new RequestService();
         initComponents();
+        UIUtil.setGreeting(jLabelHelloEmployee, "Employee");
+        loadLeaveTypeCombo();
+        loadLeaveBalances();
+        loadLeaveHistory();
+    }
+    
+    private void loadLeaveTypeCombo() {
+        jComboBoxLeaveType.removeAllItems();
+        jComboBoxLeaveType.addItem("Select");
+
+        int empId = Session.getCurrentUser().getEmployeeID();
+        
+        List<LeaveBalance> balances = requestService.getLeaveBalances(empId);
+
+        // Lookup for leaveTypeID to leaveTypeName
+        Map<Integer, String> typeNames = requestService.getLeaveTypes().stream()
+                .collect(Collectors.toMap(
+                        LeaveType::getLeaveTypeID,
+                        LeaveType::getLeaveName
+                ));
+
+        for (LeaveBalance lb : balances) {
+            // Only show if they have any remaining days
+            if (lb.getRemainingDays() > 0) {
+                String name = typeNames.get(lb.getLeaveTypeID());
+                if (name != null) {
+                    jComboBoxLeaveType.addItem(name);
+                }
+            }
+        }
+    }
+
+    private void loadLeaveBalances() {
+        int empId = Session.getCurrentUser().getEmployeeID();
+        
+        // Fetch employee to get work status
+        EmployeeView e = requestService.getEmployeeDetails(empId);
+        if (e == null) {
+            return;
+        }
+        
+        List<LeaveBalance> balances = requestService.getLeaveBalances(empId);
+
+        String[] cols = {
+            "Leave Type", 
+            "Entitled Days", 
+            "Used Days", 
+            "Remaining Days"
+        };
+
+        UIUtil.styleTable(jTableLeaveBalance, cols);
+
+        DefaultTableModel model = (DefaultTableModel) jTableLeaveBalance.getModel();
+        model.setRowCount(0);
+
+        if ("Probationary".equalsIgnoreCase(e.getWorkStatus())) {
+            return;
+        }
+
+        Map<Integer, String> typeNames = requestService.getLeaveTypes().stream()
+                .collect(Collectors.toMap(LeaveType::getLeaveTypeID, LeaveType::getLeaveName));
+
+        for (LeaveBalance lb : balances) {
+            model.addRow(new Object[]{
+                typeNames.getOrDefault(lb.getLeaveTypeID(), ""),
+                lb.getEntitledDays(),
+                lb.getUsedDays(),
+                lb.getRemainingDays()
+            });
+        }
+    }
+
+    private void loadLeaveHistory() {
+        int empId = Session.getCurrentUser().getEmployeeID();
+        
+        List<LeaveRequest> history = requestService.getLeaveHistory(empId);
+
+        String[] cols = {
+            "Leave ID", 
+            "Request Date", 
+            "Start Date", 
+            "End Date", 
+            "Days", 
+            "Type", 
+            "Status"
+        };
+
+        UIUtil.styleTable(jTableLeaveHistory, cols);
+        
+        DefaultTableModel model = (DefaultTableModel) jTableLeaveHistory.getModel();
+
+        Map<Integer, String> typeNames = requestService.getLeaveTypes().stream()
+                .collect(Collectors.toMap(LeaveType::getLeaveTypeID, LeaveType::getLeaveName));
+
+        for (LeaveRequest lr : history) {
+            model.addRow(new Object[]{
+                lr.getLeaveID(),
+                lr.getDate(),
+                lr.getStartDate(),
+                lr.getEndDate(),
+                lr.getLeaveDays(),
+                typeNames.getOrDefault(lr.getLeaveTypeID(), ""),
+                lr.getStatus()
+            });
+        }
+    }
+    
+    private void onViewClicked() {
+        int row = jTableLeaveHistory.getSelectedRow();
+        if (row < 0) {
+            UIUtil.showWarningMessage(this, "Please select a leave to view.", "No Selection");
+            return;
+        }
+
+        int leaveID = (int) jTableLeaveHistory.getValueAt(row, 0);
+        employeePortal.getViewLeavePanel().loadSelectedLeave(leaveID);
+    
+        CardLayout cardLayout = (CardLayout) employeePortal.getPanelParentCard().getLayout();
+        cardLayout.show(employeePortal.getPanelParentCard(), "ViewLeave");
+    }
+    
+    private void handleLeaveSubmit() {
+        int empId = Session.getCurrentUser().getEmployeeID();
+        EmployeeView efd = requestService.getEmployeeDetails(empId);
+
+        if ("Probationary".equalsIgnoreCase(efd.getWorkStatus())) {
+            UIUtil.showWarningMessage(this, "Only regular employees are entitled to any kind of leave.", "Not Eligible");
+            return;
+        }
+        
+        if (jDateChooserLeaveStartDate.getDate() == null) {
+            UIUtil.showWarningMessage(this, "Please select a start date.", "Missing Date");
+            return;
+        }
+        if (jDateChooserLeaveEndDate.getDate() == null) {
+            UIUtil.showWarningMessage(this, "Please select an end date.", "Missing Date");
+            return;
+        }
+        
+        if ("Select".equals(jComboBoxLeaveType.getSelectedItem())) {
+            UIUtil.showErrorMessage(this, "Please select a leave type.", "Validation Error"); 
+            return;
+        }
+
+        LocalDate start = jDateChooserLeaveStartDate.getDate()
+                .toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        LocalDate end = jDateChooserLeaveEndDate.getDate()
+                .toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        LocalDate today = LocalDate.now();
+        
+        if (start.isBefore(today)) {
+            UIUtil.showErrorMessage(this, "Leave start date cannot be earlier than today.", "Invalid Start Date");
+            return;
+        }
+        
+        if (start.isAfter(end)) {
+            UIUtil.showErrorMessage(this, "Start date must be on or before end date.", "Invalid Dates");
+            return;
+        }
+
+        String selectedName = (String) jComboBoxLeaveType.getSelectedItem();
+        
+        LeaveType selectedType = requestService.getLeaveTypes().stream()
+                .filter(t -> t.getLeaveName().equals(selectedName))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Unknown leave type: " + selectedName));
+        
+        if (selectedType == null) {
+            UIUtil.showWarningMessage(this, "Please select a leave type.", "Missing Date");
+            return;
+        }
+
+        String reason = jTextAreaReason.getText().trim();
+
+        try {
+            requestService.submitLeaveRequest(empId, start, end, selectedType.getLeaveTypeID(), reason);
+            UIUtil.showInfoMessage(this, "Leave request submitted successfully!", "Success");
+
+            // Refresh tables
+            loadLeaveBalances();
+            loadLeaveHistory();
+            
+            // Once submission is successful, clear fields and refresh Employee Dashboard
+            jDateChooserLeaveStartDate.setDate(null);
+            jDateChooserLeaveEndDate.setDate(null);
+            jComboBoxLeaveType.setSelectedIndex(0);
+            jTextAreaReason.setText("");
+                      
+            EmployeeDashboardPanel employeeDashboard = employeePortal.getEmployeeDashboardPanel();
+            employeeDashboard.loadMetrics();
+
+        } catch (Exception ex) {
+            UIUtil.showErrorMessage(this, ex.getMessage(), "Submission Failed");
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -52,7 +261,7 @@ public class LeavePanel extends javax.swing.JPanel {
         jLabelHelloEmployee.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         jLabelHelloEmployee.setText("Hello, Employee!");
         jPanel1.add(jLabelHelloEmployee);
-        jLabelHelloEmployee.setBounds(30, 30, 210, 29);
+        jLabelHelloEmployee.setBounds(30, 30, 590, 29);
 
         jLabelLeaveSmall.setText("Leave");
         jPanel1.add(jLabelLeaveSmall);
@@ -116,7 +325,6 @@ public class LeavePanel extends javax.swing.JPanel {
         jScrollPane1.setBounds(560, 40, 250, 120);
 
         jComboBoxLeaveType.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        jComboBoxLeaveType.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Select", "Vacation Leave", "Sick Leave", "Emergency Leave", "Maternity Leave", "Paternity Leave" }));
         jComboBoxLeaveType.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jComboBoxLeaveTypeActionPerformed(evt);
@@ -150,7 +358,6 @@ public class LeavePanel extends javax.swing.JPanel {
                 {null, null, null, null},
                 {null, null, null, null},
                 {null, null, null, null},
-                {null, null, null, null},
                 {null, null, null, null}
             },
             new String [] {
@@ -180,7 +387,7 @@ public class LeavePanel extends javax.swing.JPanel {
         jScrollPane2.setViewportView(jTableLeaveBalance);
 
         jPanelLeaveRequestBox.add(jScrollPane2);
-        jScrollPane2.setBounds(20, 220, 1020, 120);
+        jScrollPane2.setBounds(20, 220, 1020, 110);
 
         jLabelLeaveHistory.setBackground(new java.awt.Color(255, 255, 255));
         jLabelLeaveHistory.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
@@ -272,12 +479,12 @@ public class LeavePanel extends javax.swing.JPanel {
 
     private void jButtonSubmitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonSubmitActionPerformed
         // TODO add your handling code here:
+        handleLeaveSubmit();
     }//GEN-LAST:event_jButtonSubmitActionPerformed
 
     private void jButtonViewActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonViewActionPerformed
         // TODO add your handling code here:
-        CardLayout cardLayout = (CardLayout) employeePortal.getPanelParentCard().getLayout();
-        cardLayout.show(employeePortal.getPanelParentCard(), "ViewLeave");
+        onViewClicked();
     }//GEN-LAST:event_jButtonViewActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

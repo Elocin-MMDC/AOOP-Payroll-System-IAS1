@@ -1,14 +1,97 @@
 package gui.admin.finance;
 
-import java.awt.CardLayout;
+import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
+import java.util.List;
+import javax.swing.table.DefaultTableModel;
+import model.pojo.Payslip;
+import service.PayrollService;
+import util.Session;
+import util.UIUtil;
 
 public class PayrollPanel extends javax.swing.JPanel {
 
     private final AdminFinancePortal financePortal;
+    private final PayrollService payrollService;
     
     public PayrollPanel(AdminFinancePortal financePortal) {
         this.financePortal = financePortal;
+        this.payrollService = new PayrollService();
         initComponents();
+        UIUtil.setGreeting(jLabelHelloAdmin, "Admin");
+        loadPayrollRecords();
+    }
+    
+    public final void loadPayrollRecords() {
+        List<Payslip> payslips = payrollService.getAllPayrollRecords();
+
+        String[] cols = {
+            "Payslip ID",
+            "Employee ID",
+            "Pay Start Date",
+            "Pay End Date",
+            "Gross Income",
+            "Total Deductions",
+            "Total Benefits",
+            "Net Income"
+        };
+
+        UIUtil.styleTable(jTablePayrollRecords, cols);
+
+        DefaultTableModel model = (DefaultTableModel) jTablePayrollRecords.getModel();
+        model.setRowCount(0);
+
+        for (Payslip p : payslips) {
+            model.addRow(new Object[]{
+                p.getPayslipID(),
+                p.getEmployeeID(),
+                p.getPayStartDate(),
+                p.getPayEndDate(),
+                p.getGrossIncome(),
+                p.getTotalDeductions(),
+                p.getTotalBenefits(),
+                p.getNetIncome()
+            });
+        }
+        UIUtil.installSearchFilter(jTablePayrollRecords, jTextFieldSearch, 0, 1, 2, 3, 4, 5, 6);
+    }
+    
+    private void runBatchProcess() {
+        int selectedMonth = jComboBoxMonth.getSelectedIndex();
+        if (selectedMonth == 0) {
+            UIUtil.showErrorMessage(this, "Please select a valid month.", "Invalid Input");
+            return;
+        }
+
+        String selectedYearStr = (String) jComboBoxYear.getSelectedItem();
+        if (selectedYearStr.equals("Select")) {
+            UIUtil.showErrorMessage(this, "Please select a valid year.", "Invalid Input");
+            return;
+        }
+
+        int selectedYear;
+        try {
+            selectedYear = Integer.parseInt(selectedYearStr);
+        } catch (NumberFormatException e) {
+            UIUtil.showErrorMessage(this, "Invalid year format. Please select a proper year.", "Invalid Input");
+            return;
+        }
+
+        LocalDate payStartDate = LocalDate.of(selectedYear, selectedMonth, 1);
+        LocalDate payEndDate = payStartDate.with(TemporalAdjusters.lastDayOfMonth());
+
+        int processedByUserID = Session.getCurrentUser().getUserID();
+        try {
+            boolean success = payrollService.runBatchPayrollProcess(processedByUserID, payStartDate, payEndDate);
+
+            if (success) {
+                loadPayrollRecords();
+                financePortal.getReportsPanel().loadPayPeriodComboBox();
+                UIUtil.showInfoMessage(this, "Payroll batch processed successfully.", "Success");
+            }
+        } catch (Exception ex) {
+            UIUtil.showErrorMessage(this, ex.getMessage(), "Error");
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -19,19 +102,17 @@ public class PayrollPanel extends javax.swing.JPanel {
         jLabelHelloAdmin = new javax.swing.JLabel();
         jLabelPayrollSmall = new javax.swing.JLabel();
         jPanelPayrollBox = new javax.swing.JPanel();
-        jLabelSelectMonth = new javax.swing.JLabel();
         jLabelSelectYear = new javax.swing.JLabel();
         jComboBoxYear = new javax.swing.JComboBox<>();
-        jComboBoxMonth = new javax.swing.JComboBox<>();
         jButtonGeneratePayslip = new javax.swing.JButton();
         jButtonBatchProcess = new javax.swing.JButton();
         jScrollPane1 = new javax.swing.JScrollPane();
-        jTableEmployeeRecords = new javax.swing.JTable();
+        jTablePayrollRecords = new javax.swing.JTable();
         jLabelPayrollRecords = new javax.swing.JLabel();
-        jLabelSeachByEmployeeID = new javax.swing.JLabel();
-        jTextFieldSearchById = new javax.swing.JTextField();
-        jLabelilterByPayPeriod = new javax.swing.JLabel();
-        jComboBoxFilterByPayPeriod = new javax.swing.JComboBox<>();
+        jLabelSelectMonth = new javax.swing.JLabel();
+        jComboBoxMonth = new javax.swing.JComboBox<>();
+        jTextFieldSearch = new javax.swing.JTextField();
+        jLabelSeach = new javax.swing.JLabel();
 
         setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
@@ -45,7 +126,7 @@ public class PayrollPanel extends javax.swing.JPanel {
         jLabelHelloAdmin.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         jLabelHelloAdmin.setText("Hello, Admin!");
         jPanel1.add(jLabelHelloAdmin);
-        jLabelHelloAdmin.setBounds(30, 30, 137, 29);
+        jLabelHelloAdmin.setBounds(30, 30, 550, 29);
 
         jLabelPayrollSmall.setText("Payroll");
         jPanel1.add(jLabelPayrollSmall);
@@ -55,41 +136,23 @@ public class PayrollPanel extends javax.swing.JPanel {
         jPanelPayrollBox.setBorder(javax.swing.BorderFactory.createTitledBorder(""));
         jPanelPayrollBox.setLayout(null);
 
-        jLabelSelectMonth.setBackground(new java.awt.Color(255, 255, 255));
-        jLabelSelectMonth.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
-        jLabelSelectMonth.setForeground(new java.awt.Color(0, 0, 0));
-        jLabelSelectMonth.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        jLabelSelectMonth.setText("Select Month :");
-        jPanelPayrollBox.add(jLabelSelectMonth);
-        jLabelSelectMonth.setBounds(20, 30, 180, 40);
-
         jLabelSelectYear.setBackground(new java.awt.Color(255, 255, 255));
         jLabelSelectYear.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         jLabelSelectYear.setForeground(new java.awt.Color(0, 0, 0));
         jLabelSelectYear.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         jLabelSelectYear.setText("Select Year :");
         jPanelPayrollBox.add(jLabelSelectYear);
-        jLabelSelectYear.setBounds(20, 70, 180, 40);
+        jLabelSelectYear.setBounds(630, 70, 150, 40);
 
         jComboBoxYear.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        jComboBoxYear.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Select", "2022", "2023", "2024", "2025" }));
+        jComboBoxYear.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Select", "2024", "2025" }));
         jComboBoxYear.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jComboBoxYearActionPerformed(evt);
             }
         });
         jPanelPayrollBox.add(jComboBoxYear);
-        jComboBoxYear.setBounds(170, 70, 260, 40);
-
-        jComboBoxMonth.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        jComboBoxMonth.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Select", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" }));
-        jComboBoxMonth.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jComboBoxMonthActionPerformed(evt);
-            }
-        });
-        jPanelPayrollBox.add(jComboBoxMonth);
-        jComboBoxMonth.setBounds(170, 30, 260, 40);
+        jComboBoxYear.setBounds(780, 70, 260, 40);
 
         jButtonGeneratePayslip.setBackground(new java.awt.Color(0, 135, 0));
         jButtonGeneratePayslip.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
@@ -113,10 +176,10 @@ public class PayrollPanel extends javax.swing.JPanel {
             }
         });
         jPanelPayrollBox.add(jButtonBatchProcess);
-        jButtonBatchProcess.setBounds(170, 110, 260, 40);
+        jButtonBatchProcess.setBounds(780, 110, 260, 40);
 
-        jTableEmployeeRecords.setAutoCreateRowSorter(true);
-        jTableEmployeeRecords.setModel(new javax.swing.table.DefaultTableModel(
+        jTablePayrollRecords.setAutoCreateRowSorter(true);
+        jTablePayrollRecords.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
                 {null, null, null, null, null, null, null, null},
                 {null, null, null, null, null, null, null, null},
@@ -150,7 +213,7 @@ public class PayrollPanel extends javax.swing.JPanel {
                 {null, null, null, null, null, null, null, null}
             },
             new String [] {
-                "Payslip ID", "Employee ID", "Pay Period", "Name", "Gross Income", "Total Deductions", "Total Allowances", "Net Income"
+                "Payslip ID", "Employee ID", "Pay Start Date", "Pay End Date", "Gross Income", "Total Deductions", "Total Benefits", "Net Income"
             }
         ) {
             Class[] types = new Class [] {
@@ -168,12 +231,12 @@ public class PayrollPanel extends javax.swing.JPanel {
                 return canEdit [columnIndex];
             }
         });
-        jTableEmployeeRecords.setFocusable(false);
-        jTableEmployeeRecords.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
-        jTableEmployeeRecords.setShowGrid(true);
-        jTableEmployeeRecords.getTableHeader().setResizingAllowed(false);
-        jTableEmployeeRecords.getTableHeader().setReorderingAllowed(false);
-        jScrollPane1.setViewportView(jTableEmployeeRecords);
+        jTablePayrollRecords.setFocusable(false);
+        jTablePayrollRecords.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        jTablePayrollRecords.setShowGrid(true);
+        jTablePayrollRecords.getTableHeader().setResizingAllowed(false);
+        jTablePayrollRecords.getTableHeader().setReorderingAllowed(false);
+        jScrollPane1.setViewportView(jTablePayrollRecords);
 
         jPanelPayrollBox.add(jScrollPane1);
         jScrollPane1.setBounds(20, 210, 1020, 340);
@@ -186,45 +249,45 @@ public class PayrollPanel extends javax.swing.JPanel {
         jPanelPayrollBox.add(jLabelPayrollRecords);
         jLabelPayrollRecords.setBounds(20, 170, 180, 40);
 
-        jLabelSeachByEmployeeID.setBackground(new java.awt.Color(255, 255, 255));
-        jLabelSeachByEmployeeID.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
-        jLabelSeachByEmployeeID.setForeground(new java.awt.Color(0, 0, 0));
-        jLabelSeachByEmployeeID.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        jLabelSeachByEmployeeID.setText("Search by Employee ID :");
-        jPanelPayrollBox.add(jLabelSeachByEmployeeID);
-        jLabelSeachByEmployeeID.setBounds(600, 30, 180, 40);
+        jLabelSelectMonth.setBackground(new java.awt.Color(255, 255, 255));
+        jLabelSelectMonth.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        jLabelSelectMonth.setForeground(new java.awt.Color(0, 0, 0));
+        jLabelSelectMonth.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        jLabelSelectMonth.setText("Select Month :");
+        jPanelPayrollBox.add(jLabelSelectMonth);
+        jLabelSelectMonth.setBounds(630, 30, 150, 40);
 
-        jTextFieldSearchById.setDisabledTextColor(new java.awt.Color(255, 255, 255));
-        jTextFieldSearchById.addActionListener(new java.awt.event.ActionListener() {
+        jComboBoxMonth.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        jComboBoxMonth.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Select", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" }));
+        jComboBoxMonth.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jTextFieldSearchByIdActionPerformed(evt);
+                jComboBoxMonthActionPerformed(evt);
             }
         });
-        jTextFieldSearchById.addKeyListener(new java.awt.event.KeyAdapter() {
+        jPanelPayrollBox.add(jComboBoxMonth);
+        jComboBoxMonth.setBounds(780, 30, 260, 40);
+
+        jTextFieldSearch.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldSearch.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jTextFieldSearchActionPerformed(evt);
+            }
+        });
+        jTextFieldSearch.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyPressed(java.awt.event.KeyEvent evt) {
-                jTextFieldSearchByIdKeyPressed(evt);
+                jTextFieldSearchKeyPressed(evt);
             }
         });
-        jPanelPayrollBox.add(jTextFieldSearchById);
-        jTextFieldSearchById.setBounds(780, 30, 260, 40);
+        jPanelPayrollBox.add(jTextFieldSearch);
+        jTextFieldSearch.setBounds(100, 30, 260, 40);
 
-        jLabelilterByPayPeriod.setBackground(new java.awt.Color(255, 255, 255));
-        jLabelilterByPayPeriod.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
-        jLabelilterByPayPeriod.setForeground(new java.awt.Color(0, 0, 0));
-        jLabelilterByPayPeriod.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        jLabelilterByPayPeriod.setText("Filter by Pay Period :");
-        jPanelPayrollBox.add(jLabelilterByPayPeriod);
-        jLabelilterByPayPeriod.setBounds(600, 70, 180, 40);
-
-        jComboBoxFilterByPayPeriod.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        jComboBoxFilterByPayPeriod.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Select", "January 2024", "February 2024", "March 2024", "April 2024", "May 2024", "June 2024", "July 2024", "August 2024", "September 2024", "October 2024", "November 2024", "December 2024" }));
-        jComboBoxFilterByPayPeriod.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jComboBoxFilterByPayPeriodActionPerformed(evt);
-            }
-        });
-        jPanelPayrollBox.add(jComboBoxFilterByPayPeriod);
-        jComboBoxFilterByPayPeriod.setBounds(780, 70, 260, 40);
+        jLabelSeach.setBackground(new java.awt.Color(255, 255, 255));
+        jLabelSeach.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        jLabelSeach.setForeground(new java.awt.Color(0, 0, 0));
+        jLabelSeach.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        jLabelSeach.setText("Search :");
+        jPanelPayrollBox.add(jLabelSeach);
+        jLabelSeach.setBounds(20, 30, 80, 40);
 
         jPanel1.add(jPanelPayrollBox);
         jPanelPayrollBox.setBounds(30, 100, 1060, 650);
@@ -246,37 +309,32 @@ public class PayrollPanel extends javax.swing.JPanel {
 
     private void jButtonBatchProcessActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonBatchProcessActionPerformed
         // TODO add your handling code here:
+        runBatchProcess();
     }//GEN-LAST:event_jButtonBatchProcessActionPerformed
 
-    private void jTextFieldSearchByIdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldSearchByIdActionPerformed
+    private void jTextFieldSearchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldSearchActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jTextFieldSearchByIdActionPerformed
+    }//GEN-LAST:event_jTextFieldSearchActionPerformed
 
-    private void jTextFieldSearchByIdKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTextFieldSearchByIdKeyPressed
+    private void jTextFieldSearchKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTextFieldSearchKeyPressed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jTextFieldSearchByIdKeyPressed
-
-    private void jComboBoxFilterByPayPeriodActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxFilterByPayPeriodActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jComboBoxFilterByPayPeriodActionPerformed
+    }//GEN-LAST:event_jTextFieldSearchKeyPressed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButtonBatchProcess;
     private javax.swing.JButton jButtonGeneratePayslip;
-    private javax.swing.JComboBox<String> jComboBoxFilterByPayPeriod;
     private javax.swing.JComboBox<String> jComboBoxMonth;
     private javax.swing.JComboBox<String> jComboBoxYear;
     private javax.swing.JLabel jLabelHelloAdmin;
     private javax.swing.JLabel jLabelPayrollRecords;
     private javax.swing.JLabel jLabelPayrollSmall;
-    private javax.swing.JLabel jLabelSeachByEmployeeID;
+    private javax.swing.JLabel jLabelSeach;
     private javax.swing.JLabel jLabelSelectMonth;
     private javax.swing.JLabel jLabelSelectYear;
-    private javax.swing.JLabel jLabelilterByPayPeriod;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanelPayrollBox;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JTable jTableEmployeeRecords;
-    private javax.swing.JTextField jTextFieldSearchById;
+    private javax.swing.JTable jTablePayrollRecords;
+    private javax.swing.JTextField jTextFieldSearch;
     // End of variables declaration//GEN-END:variables
 }

@@ -1,14 +1,102 @@
 package gui.admin.it;
 
 import java.awt.CardLayout;
+import model.pojo.EmployeeView;
+import model.pojo.Role;
+import model.pojo.UserAccount;
+import service.AccountService;
+import util.UIUtil;
 
 public class ViewAccountPanel extends javax.swing.JPanel {
     
     private final AdminITPortal itPortal;
+    private final AccountService accountService;
 
     public ViewAccountPanel(AdminITPortal itPortal) {
         this.itPortal = itPortal;
+        this.accountService = new AccountService();
         initComponents();
+        UIUtil.setGreeting(jLabelHelloAdmin, "Admin");
+        UIUtil.applyUsernameFormat(jTextFieldUsername);
+        populateDropdowns();
+    }
+    
+    private void populateDropdowns() {
+        for (Role r : accountService.getAllRoles()) {
+            jComboBoxRole.addItem(r.getRoleName());
+        }
+
+        jComboBoxAccountStatus.addItem("Active");
+        jComboBoxAccountStatus.addItem("Deactivated");
+    }
+    
+    public void loadSelectedAccount(int userId) {
+        UserAccount ua = accountService.getAccountById(userId);
+        if (ua == null) {
+            UIUtil.showErrorMessage(this, "User account not found.", "Error");
+            return;
+        }
+
+        EmployeeView efd = accountService.getEmployeeDetails(ua.getEmployeeID());
+        Role role = accountService.getRoleById(ua.getRoleID());
+
+        jTextFieldUserID.setText(String.valueOf(ua.getUserID()));
+        jTextFieldEmployeeID.setText(String.valueOf(ua.getEmployeeID()));
+        jTextFieldFullName.setText(efd.getFirstName() + " " + efd.getLastName());
+        jTextFieldPosition.setText(efd.getPositionTitle());
+        jTextFieldDepartment.setText(efd.getDepartmentName());
+        jTextFieldUsername.setText(ua.getUsername());
+        jComboBoxRole.setSelectedItem(role.getRoleName());
+        jComboBoxAccountStatus.setSelectedItem(ua.getAccountStatus());
+    }
+    
+    private void resetPassword() {
+        int userID = Integer.parseInt(jTextFieldUserID.getText());
+
+        if (!UIUtil.showConfirmation(this, "Are you sure you want to reset the password for User ID " + userID + "?")) {
+            return;
+        }
+
+        try {
+            boolean success = accountService.resetPassword(userID);
+            if (success) {
+                itPortal.getSecurityPanel().loadAuditLogs();
+                itPortal.getSecurityPanel().loadLoginLogs();
+                UIUtil.showInfoMessage(this, "Password has been reset to 'temppassword'.", "Success");
+            } else {
+                UIUtil.showErrorMessage(this, "Failed to reset password.", "Error");
+            }
+        } catch (Exception ex) {
+            UIUtil.showErrorMessage(this, ex.getMessage(), "System Error");
+        }
+    }
+    
+    private void updateAccount() {
+        int userID = Integer.parseInt(jTextFieldUserID.getText());
+        String newUsername = jTextFieldUsername.getText().trim();
+        String newRoleName = jComboBoxRole.getSelectedItem().toString();
+        String newStatus = jComboBoxAccountStatus.getSelectedItem().toString();
+        
+        if (newUsername == null || newUsername.trim().isEmpty() || newRoleName == null 
+                || "Select".equals(newRoleName) || newStatus == null || "Select".equals(newStatus)) {
+            UIUtil.showErrorMessage(this, "All fields must be filled out.", "Error");
+            return;
+        }
+
+        try {
+            boolean success = accountService.updateAccount(userID, newUsername, newRoleName, newStatus);
+            if (success) {
+                // Refresh pages
+                loadSelectedAccount(userID);
+                itPortal.getAccountsPanel().loadAccountRecords();
+                itPortal.getSecurityPanel().loadAuditLogs();
+                UIUtil.showInfoMessage(this, "User account updated successfully.", "Success");
+            } else {
+                UIUtil.showInfoMessage(this, "No changes detected. Account not updated.", "Info");
+            }
+        } catch (Exception ex) {
+            UIUtil.showErrorMessage(this, ex.getMessage(), "System Error");
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -51,7 +139,7 @@ public class ViewAccountPanel extends javax.swing.JPanel {
         jLabelHelloAdmin.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         jLabelHelloAdmin.setText("Hello, Admin!");
         jPanel1.add(jLabelHelloAdmin);
-        jLabelHelloAdmin.setBounds(30, 30, 137, 29);
+        jLabelHelloAdmin.setBounds(30, 30, 640, 29);
 
         jLabelViewRecordSmall.setText("Accounts > View Record");
         jPanel1.add(jLabelViewRecordSmall);
@@ -62,7 +150,7 @@ public class ViewAccountPanel extends javax.swing.JPanel {
         jPanelViewAccountBox.setLayout(null);
 
         jTextFieldFullName.setBackground(new java.awt.Color(240, 240, 240));
-        jTextFieldFullName.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldFullName.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldFullName.setEnabled(false);
         jTextFieldFullName.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -99,7 +187,7 @@ public class ViewAccountPanel extends javax.swing.JPanel {
         jLabelUserID.setBounds(20, 210, 290, 40);
 
         jTextFieldUserID.setBackground(new java.awt.Color(240, 240, 240));
-        jTextFieldUserID.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldUserID.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldUserID.setEnabled(false);
         jTextFieldUserID.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -118,7 +206,7 @@ public class ViewAccountPanel extends javax.swing.JPanel {
         jLabelEmployeeID.setBounds(20, 250, 290, 40);
 
         jTextFieldEmployeeID.setBackground(new java.awt.Color(240, 240, 240));
-        jTextFieldEmployeeID.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldEmployeeID.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldEmployeeID.setEnabled(false);
         jTextFieldEmployeeID.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -161,6 +249,7 @@ public class ViewAccountPanel extends javax.swing.JPanel {
         jLabelPosition.setBounds(20, 330, 290, 40);
 
         jTextFieldPosition.setBackground(new java.awt.Color(240, 240, 240));
+        jTextFieldPosition.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldPosition.setEnabled(false);
         jTextFieldPosition.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -179,6 +268,7 @@ public class ViewAccountPanel extends javax.swing.JPanel {
         jLabelDepartment.setBounds(540, 210, 290, 40);
 
         jTextFieldDepartment.setBackground(new java.awt.Color(240, 240, 240));
+        jTextFieldDepartment.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldDepartment.setEnabled(false);
         jTextFieldDepartment.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -213,7 +303,7 @@ public class ViewAccountPanel extends javax.swing.JPanel {
         jButtonResetPassword.setBounds(870, 30, 170, 40);
 
         jComboBoxRole.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        jComboBoxRole.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Select", "Employee", "HR Admin", "Finance Admin", "IT Admin" }));
+        jComboBoxRole.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Select" }));
         jComboBoxRole.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jComboBoxRoleActionPerformed(evt);
@@ -231,7 +321,7 @@ public class ViewAccountPanel extends javax.swing.JPanel {
         jLabelAccountStatus.setBounds(540, 330, 290, 40);
 
         jComboBoxAccountStatus.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        jComboBoxAccountStatus.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Select", "Active", "Deactivated" }));
+        jComboBoxAccountStatus.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Select" }));
         jComboBoxAccountStatus.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jComboBoxAccountStatusActionPerformed(evt);
@@ -278,12 +368,12 @@ public class ViewAccountPanel extends javax.swing.JPanel {
 
     private void jButtonUpdateActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonUpdateActionPerformed
         // TODO add your handling code here:
+        updateAccount();
     }//GEN-LAST:event_jButtonUpdateActionPerformed
 
     private void jButtonResetPasswordActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonResetPasswordActionPerformed
         // TODO add your handling code here:
-        CardLayout cardLayout = (CardLayout) itPortal.getPanelParentCard().getLayout();
-        cardLayout.show(itPortal.getPanelParentCard(), "ViewAccount");
+        resetPassword();
     }//GEN-LAST:event_jButtonResetPasswordActionPerformed
 
     private void jComboBoxRoleActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxRoleActionPerformed

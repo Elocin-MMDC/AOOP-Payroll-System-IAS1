@@ -1,12 +1,33 @@
 package gui.admin.it;
 
+import javax.swing.SwingUtilities;
+import service.DashboardService;
+import util.PasswordUtil;
+import util.UIUtil;
+
 public class ITDashboardPanel extends javax.swing.JPanel {
 
     private final AdminITPortal itPortal;
+    private final DashboardService dashboardService;
     
     public ITDashboardPanel(AdminITPortal itPortal) {
         this.itPortal = itPortal;
+        this.dashboardService = new DashboardService();
         initComponents();
+        UIUtil.setGreeting(jLabelHelloAdmin, "Admin");
+        UIUtil.startClock(jLabelDateAndTime, "MMMM dd, yyyy HH:mm:ss");
+        loadMetrics();
+    }
+    
+    protected final void loadMetrics() {
+        try {
+            jLabelEmployeeCount.setText(String.valueOf(dashboardService.getTotalEmployees()));
+            jLabelDepartmentCount.setText(String.valueOf(dashboardService.getTotalDepartments()));
+            jLabelPendingITTicketCount.setText(String.valueOf(dashboardService.getTotalPendingTicketsForTeam("IT"))
+            );
+        } catch (Exception e) {
+            UIUtil.showErrorMessage(this, "Failed to retrieve data.", "Error");
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -16,15 +37,15 @@ public class ITDashboardPanel extends javax.swing.JPanel {
         jPanelHRDashboard = new javax.swing.JPanel();
         jPanelDepartmentsBox = new javax.swing.JPanel();
         jLabelTotalDepartments = new javax.swing.JLabel();
-        jLabelInsertDepartments = new javax.swing.JLabel();
+        jLabelDepartmentCount = new javax.swing.JLabel();
         jPanelDateAndTimeBox = new javax.swing.JPanel();
-        jLabelInsertDateAndTime = new javax.swing.JLabel();
+        jLabelDateAndTime = new javax.swing.JLabel();
         jLabelDateAndTIme = new javax.swing.JLabel();
-        jPanelEmployeesCountBox1 = new javax.swing.JPanel();
-        jLabelTotalEmployeesCount1 = new javax.swing.JLabel();
-        jLabelInsertEmployeesCount1 = new javax.swing.JLabel();
+        jPanelEmployeesCountBox = new javax.swing.JPanel();
+        jLabelTotalEmployeesCount = new javax.swing.JLabel();
+        jLabelEmployeeCount = new javax.swing.JLabel();
         jPanelPendingTickets = new javax.swing.JPanel();
-        jLabelPendingTickets = new javax.swing.JLabel();
+        jLabelPendingITTicketCount = new javax.swing.JLabel();
         jLabelPendingITTickets = new javax.swing.JLabel();
         jLabelHelloAdmin = new javax.swing.JLabel();
         jLabelDashboardSmall = new javax.swing.JLabel();
@@ -47,28 +68,28 @@ public class ITDashboardPanel extends javax.swing.JPanel {
         jPanelDepartmentsBox.add(jLabelTotalDepartments);
         jLabelTotalDepartments.setBounds(20, 0, 240, 50);
 
-        jLabelInsertDepartments.setBackground(new java.awt.Color(255, 255, 255));
-        jLabelInsertDepartments.setFont(new java.awt.Font("Segoe UI", 1, 56)); // NOI18N
-        jLabelInsertDepartments.setForeground(new java.awt.Color(0, 0, 0));
-        jLabelInsertDepartments.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabelInsertDepartments.setText("0");
-        jPanelDepartmentsBox.add(jLabelInsertDepartments);
-        jLabelInsertDepartments.setBounds(20, 50, 380, 100);
+        jLabelDepartmentCount.setBackground(new java.awt.Color(255, 255, 255));
+        jLabelDepartmentCount.setFont(new java.awt.Font("Segoe UI", 1, 56)); // NOI18N
+        jLabelDepartmentCount.setForeground(new java.awt.Color(0, 0, 0));
+        jLabelDepartmentCount.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabelDepartmentCount.setText("0");
+        jPanelDepartmentsBox.add(jLabelDepartmentCount);
+        jLabelDepartmentCount.setBounds(20, 50, 380, 100);
 
         jPanelHRDashboard.add(jPanelDepartmentsBox);
-        jPanelDepartmentsBox.setBounds(90, 440, 420, 160);
+        jPanelDepartmentsBox.setBounds(600, 240, 420, 160);
 
         jPanelDateAndTimeBox.setBackground(new java.awt.Color(255, 255, 255));
         jPanelDateAndTimeBox.setBorder(javax.swing.BorderFactory.createTitledBorder(""));
         jPanelDateAndTimeBox.setLayout(null);
 
-        jLabelInsertDateAndTime.setBackground(new java.awt.Color(255, 255, 255));
-        jLabelInsertDateAndTime.setFont(new java.awt.Font("Segoe UI", 1, 24)); // NOI18N
-        jLabelInsertDateAndTime.setForeground(new java.awt.Color(33, 105, 84));
-        jLabelInsertDateAndTime.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabelInsertDateAndTime.setText("January 1, 2025 12:00:00");
-        jPanelDateAndTimeBox.add(jLabelInsertDateAndTime);
-        jLabelInsertDateAndTime.setBounds(20, 60, 380, 60);
+        jLabelDateAndTime.setBackground(new java.awt.Color(255, 255, 255));
+        jLabelDateAndTime.setFont(new java.awt.Font("Segoe UI", 1, 24)); // NOI18N
+        jLabelDateAndTime.setForeground(new java.awt.Color(33, 105, 84));
+        jLabelDateAndTime.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabelDateAndTime.setText("January 1, 2025 12:00:00");
+        jPanelDateAndTimeBox.add(jLabelDateAndTime);
+        jLabelDateAndTime.setBounds(20, 60, 380, 60);
 
         jLabelDateAndTIme.setBackground(new java.awt.Color(255, 255, 255));
         jLabelDateAndTIme.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
@@ -79,42 +100,42 @@ public class ITDashboardPanel extends javax.swing.JPanel {
         jLabelDateAndTIme.setBounds(20, 0, 140, 50);
 
         jPanelHRDashboard.add(jPanelDateAndTimeBox);
-        jPanelDateAndTimeBox.setBounds(600, 240, 420, 160);
+        jPanelDateAndTimeBox.setBounds(90, 440, 420, 160);
 
-        jPanelEmployeesCountBox1.setBackground(new java.awt.Color(255, 255, 255));
-        jPanelEmployeesCountBox1.setBorder(javax.swing.BorderFactory.createTitledBorder(""));
-        jPanelEmployeesCountBox1.setLayout(null);
+        jPanelEmployeesCountBox.setBackground(new java.awt.Color(255, 255, 255));
+        jPanelEmployeesCountBox.setBorder(javax.swing.BorderFactory.createTitledBorder(""));
+        jPanelEmployeesCountBox.setLayout(null);
 
-        jLabelTotalEmployeesCount1.setBackground(new java.awt.Color(255, 255, 255));
-        jLabelTotalEmployeesCount1.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
-        jLabelTotalEmployeesCount1.setForeground(new java.awt.Color(0, 0, 0));
-        jLabelTotalEmployeesCount1.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        jLabelTotalEmployeesCount1.setText("Total Employees Count");
-        jPanelEmployeesCountBox1.add(jLabelTotalEmployeesCount1);
-        jLabelTotalEmployeesCount1.setBounds(20, 0, 240, 50);
+        jLabelTotalEmployeesCount.setBackground(new java.awt.Color(255, 255, 255));
+        jLabelTotalEmployeesCount.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        jLabelTotalEmployeesCount.setForeground(new java.awt.Color(0, 0, 0));
+        jLabelTotalEmployeesCount.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        jLabelTotalEmployeesCount.setText("Total Employees Count");
+        jPanelEmployeesCountBox.add(jLabelTotalEmployeesCount);
+        jLabelTotalEmployeesCount.setBounds(20, 0, 240, 50);
 
-        jLabelInsertEmployeesCount1.setBackground(new java.awt.Color(255, 255, 255));
-        jLabelInsertEmployeesCount1.setFont(new java.awt.Font("Segoe UI", 1, 56)); // NOI18N
-        jLabelInsertEmployeesCount1.setForeground(new java.awt.Color(0, 0, 0));
-        jLabelInsertEmployeesCount1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabelInsertEmployeesCount1.setText("0");
-        jPanelEmployeesCountBox1.add(jLabelInsertEmployeesCount1);
-        jLabelInsertEmployeesCount1.setBounds(20, 50, 380, 100);
+        jLabelEmployeeCount.setBackground(new java.awt.Color(255, 255, 255));
+        jLabelEmployeeCount.setFont(new java.awt.Font("Segoe UI", 1, 56)); // NOI18N
+        jLabelEmployeeCount.setForeground(new java.awt.Color(0, 0, 0));
+        jLabelEmployeeCount.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabelEmployeeCount.setText("0");
+        jPanelEmployeesCountBox.add(jLabelEmployeeCount);
+        jLabelEmployeeCount.setBounds(20, 50, 380, 100);
 
-        jPanelHRDashboard.add(jPanelEmployeesCountBox1);
-        jPanelEmployeesCountBox1.setBounds(90, 240, 420, 160);
+        jPanelHRDashboard.add(jPanelEmployeesCountBox);
+        jPanelEmployeesCountBox.setBounds(90, 240, 420, 160);
 
         jPanelPendingTickets.setBackground(new java.awt.Color(255, 255, 255));
         jPanelPendingTickets.setBorder(javax.swing.BorderFactory.createTitledBorder(""));
         jPanelPendingTickets.setLayout(null);
 
-        jLabelPendingTickets.setBackground(new java.awt.Color(255, 255, 255));
-        jLabelPendingTickets.setFont(new java.awt.Font("Segoe UI", 1, 56)); // NOI18N
-        jLabelPendingTickets.setForeground(new java.awt.Color(0, 0, 0));
-        jLabelPendingTickets.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabelPendingTickets.setText("0");
-        jPanelPendingTickets.add(jLabelPendingTickets);
-        jLabelPendingTickets.setBounds(20, 50, 380, 100);
+        jLabelPendingITTicketCount.setBackground(new java.awt.Color(255, 255, 255));
+        jLabelPendingITTicketCount.setFont(new java.awt.Font("Segoe UI", 1, 56)); // NOI18N
+        jLabelPendingITTicketCount.setForeground(new java.awt.Color(0, 0, 0));
+        jLabelPendingITTicketCount.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabelPendingITTicketCount.setText("0");
+        jPanelPendingTickets.add(jLabelPendingITTicketCount);
+        jLabelPendingITTicketCount.setBounds(20, 50, 380, 100);
 
         jLabelPendingITTickets.setBackground(new java.awt.Color(255, 255, 255));
         jLabelPendingITTickets.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
@@ -133,7 +154,7 @@ public class ITDashboardPanel extends javax.swing.JPanel {
         jLabelHelloAdmin.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         jLabelHelloAdmin.setText("Hello, Admin!");
         jPanelHRDashboard.add(jLabelHelloAdmin);
-        jLabelHelloAdmin.setBounds(30, 30, 190, 29);
+        jLabelHelloAdmin.setBounds(30, 30, 560, 29);
 
         jLabelDashboardSmall.setText("IT Dashboard");
         jPanelHRDashboard.add(jLabelDashboardSmall);
@@ -145,17 +166,17 @@ public class ITDashboardPanel extends javax.swing.JPanel {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel jLabelDashboardSmall;
     private javax.swing.JLabel jLabelDateAndTIme;
+    private javax.swing.JLabel jLabelDateAndTime;
+    private javax.swing.JLabel jLabelDepartmentCount;
+    private javax.swing.JLabel jLabelEmployeeCount;
     private javax.swing.JLabel jLabelHelloAdmin;
-    private javax.swing.JLabel jLabelInsertDateAndTime;
-    private javax.swing.JLabel jLabelInsertDepartments;
-    private javax.swing.JLabel jLabelInsertEmployeesCount1;
+    private javax.swing.JLabel jLabelPendingITTicketCount;
     private javax.swing.JLabel jLabelPendingITTickets;
-    private javax.swing.JLabel jLabelPendingTickets;
     private javax.swing.JLabel jLabelTotalDepartments;
-    private javax.swing.JLabel jLabelTotalEmployeesCount1;
+    private javax.swing.JLabel jLabelTotalEmployeesCount;
     private javax.swing.JPanel jPanelDateAndTimeBox;
     private javax.swing.JPanel jPanelDepartmentsBox;
-    private javax.swing.JPanel jPanelEmployeesCountBox1;
+    private javax.swing.JPanel jPanelEmployeesCountBox;
     private javax.swing.JPanel jPanelHRDashboard;
     private javax.swing.JPanel jPanelPendingTickets;
     // End of variables declaration//GEN-END:variables

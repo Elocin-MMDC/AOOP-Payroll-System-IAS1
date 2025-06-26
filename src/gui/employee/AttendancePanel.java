@@ -1,14 +1,101 @@
 package gui.employee;
 
-import java.awt.CardLayout;
+import java.util.List;
+import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
+import model.pojo.Attendance;
+import service.AttendanceService;
+import service.AttendanceService.State;
+import util.Session;
+import util.UIUtil;
 
 public class AttendancePanel extends javax.swing.JPanel {
     
     private final EmployeePortal employeePortal;
+    private final AttendanceService attendanceService;
 
     public AttendancePanel(EmployeePortal employeePortal) {
         this.employeePortal = employeePortal;
+        this.attendanceService = new AttendanceService();
         initComponents();
+        UIUtil.setGreeting(jLabelHelloEmployee, "Employee");
+        UIUtil.startClock(jLabelDateAndTime, "MMMM dd, yyyy HH:mm:ss");
+        loadAttendanceHistory();
+        updateAttendanceView();
+    }
+    
+    private void loadAttendanceHistory() {
+        int empId = Session.getCurrentUser().getEmployeeID();
+        
+        List<Attendance> list = attendanceService.getHistory(empId);
+        
+        String[] cols = {
+            "Attendance ID", 
+            "Attendance Date", 
+            "Clock-In", 
+            "Clock-Out", 
+            "Regular Hours", 
+            "Overtime Hours", 
+            "Status"
+        };
+
+        UIUtil.styleTable(jTableAttendanceHistory, cols);
+
+        DefaultTableModel model = (DefaultTableModel) jTableAttendanceHistory.getModel();
+        model.setRowCount(0);
+        
+        for (Attendance a : list) {
+            model.addRow(new Object[]{
+                a.getAttendanceID(),
+                a.getDate(),
+                a.getClockIn(),
+                a.getClockOut(),
+                a.getRegularHours(),
+                a.getOvertimeHours(),
+                a.getStatus()
+            });
+        }
+    }
+    
+    private void updateAttendanceView() {
+        // Set button text and enabled based on state
+        AttendanceService.State state = attendanceService.getState();
+        switch (state) {
+            case NOT_CLOCKED_IN:
+                jButtonClock.setText("Clock In");
+                jButtonClock.setEnabled(true);
+                break;
+            case CLOCKED_IN:
+                jButtonClock.setText("Clock Out");
+                jButtonClock.setEnabled(true);
+                break;
+            case COMPLETED:
+                jButtonClock.setText("Completed");
+                jButtonClock.setEnabled(false);
+                break;
+        }
+
+        // Populate the three text fields
+        jTextFieldClockInTime.setText(attendanceService.getFormattedClockIn());
+        jTextFieldClockOutTime.setText(attendanceService.getFormattedClockOut());
+        jTextFieldHoursWorked.setText(attendanceService.getFormattedHoursWorked());
+    }
+    
+    private void onClockCliked() {
+        try {
+            if (attendanceService.getState() == State.NOT_CLOCKED_IN) {
+                attendanceService.clockIn();
+            } else {
+                attendanceService.clockOut();
+            }
+            updateAttendanceView();
+            loadAttendanceHistory();
+
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(
+                    this, ex.getMessage(), "Attendance Error", JOptionPane.ERROR_MESSAGE
+            );
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -30,7 +117,7 @@ public class AttendancePanel extends javax.swing.JPanel {
         jScrollPane1 = new javax.swing.JScrollPane();
         jTableAttendanceHistory = new javax.swing.JTable();
         jPanelDateAndTimeBox = new javax.swing.JPanel();
-        jLabelInsertDateAndTime = new javax.swing.JLabel();
+        jLabelDateAndTime = new javax.swing.JLabel();
 
         setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
@@ -44,7 +131,7 @@ public class AttendancePanel extends javax.swing.JPanel {
         jLabelHelloEmployee.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         jLabelHelloEmployee.setText("Hello, Employee!");
         jPanel1.add(jLabelHelloEmployee);
-        jLabelHelloEmployee.setBounds(30, 30, 210, 29);
+        jLabelHelloEmployee.setBounds(30, 30, 560, 29);
 
         jLabelAttendanceSmall.setText("Attendance");
         jPanel1.add(jLabelAttendanceSmall);
@@ -197,13 +284,13 @@ public class AttendancePanel extends javax.swing.JPanel {
         jPanelDateAndTimeBox.setBorder(javax.swing.BorderFactory.createTitledBorder(""));
         jPanelDateAndTimeBox.setLayout(null);
 
-        jLabelInsertDateAndTime.setBackground(new java.awt.Color(255, 255, 255));
-        jLabelInsertDateAndTime.setFont(new java.awt.Font("Segoe UI", 1, 22)); // NOI18N
-        jLabelInsertDateAndTime.setForeground(new java.awt.Color(0, 43, 175));
-        jLabelInsertDateAndTime.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabelInsertDateAndTime.setText("January 1, 2025 12:00:00");
-        jPanelDateAndTimeBox.add(jLabelInsertDateAndTime);
-        jLabelInsertDateAndTime.setBounds(0, 30, 310, 60);
+        jLabelDateAndTime.setBackground(new java.awt.Color(255, 255, 255));
+        jLabelDateAndTime.setFont(new java.awt.Font("Segoe UI", 1, 22)); // NOI18N
+        jLabelDateAndTime.setForeground(new java.awt.Color(0, 43, 175));
+        jLabelDateAndTime.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabelDateAndTime.setText("January 1, 2025 12:00:00");
+        jPanelDateAndTimeBox.add(jLabelDateAndTime);
+        jLabelDateAndTime.setBounds(0, 30, 310, 60);
 
         jPanelAttendanceBox.add(jPanelDateAndTimeBox);
         jPanelDateAndTimeBox.setBounds(20, 30, 310, 120);
@@ -228,6 +315,7 @@ public class AttendancePanel extends javax.swing.JPanel {
 
     private void jButtonClockActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonClockActionPerformed
         // TODO add your handling code 
+        onClockCliked();
     }//GEN-LAST:event_jButtonClockActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -235,10 +323,10 @@ public class AttendancePanel extends javax.swing.JPanel {
     private javax.swing.JLabel jLabelAttendanceSmall;
     private javax.swing.JLabel jLabelClockInTime;
     private javax.swing.JLabel jLabelClockOutTime;
+    private javax.swing.JLabel jLabelDateAndTime;
     private javax.swing.JLabel jLabelHelloEmployee;
     private javax.swing.JLabel jLabelHoursWorked;
     private javax.swing.JLabel jLabelHoursWorked1;
-    private javax.swing.JLabel jLabelInsertDateAndTime;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanelAttendanceBox;
     private javax.swing.JPanel jPanelDateAndTimeBox;

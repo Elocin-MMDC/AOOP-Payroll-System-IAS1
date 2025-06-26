@@ -2,11 +2,10 @@ package model.pojo;
 
 import java.math.BigDecimal;
 
-
 public class WithholdingTaxMatrix {
     private int withholdingTaxID;
     private BigDecimal minTaxableIncome;
-    private BigDecimal maxTaxableIncome;   // nullable
+    private BigDecimal maxTaxableIncome;
     private BigDecimal baseTax;
     private BigDecimal excessRate;
 
@@ -16,6 +15,10 @@ public class WithholdingTaxMatrix {
         this.maxTaxableIncome = maxTaxableIncome;
         this.baseTax = baseTax;
         this.excessRate = excessRate;
+    }
+    
+    public WithholdingTaxMatrix() {
+        
     }
 
     public int getWithholdingTaxID() {

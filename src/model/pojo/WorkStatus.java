@@ -1,6 +1,5 @@
 package model.pojo;
 
-
 public class WorkStatus {
     private int workStatusID;
     private String workStatusName;
@@ -10,6 +9,10 @@ public class WorkStatus {
         this.workStatusID = workStatusID;
         this.workStatusName = workStatusName;
         this.description = description;
+    }
+    
+    public WorkStatus() {
+
     }
 
     public int getWorkStatusID() {

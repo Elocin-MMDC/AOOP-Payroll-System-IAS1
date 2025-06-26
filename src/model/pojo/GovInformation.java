@@ -2,7 +2,6 @@ package model.pojo;
 
 import java.time.LocalDateTime;
 
-
 public class GovInformation {
     private int govID;
     private String sssNumber;
@@ -20,6 +19,10 @@ public class GovInformation {
         this.pagIbigNumber = pagIbigNumber;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+    }
+
+    public GovInformation() {
+        
     }
 
     public int getGovID() {

@@ -2,15 +2,14 @@ package model.pojo;
 
 import java.time.LocalDateTime;
 
-
 public class LoginLog {
     private int loginID;
     private int userID;
     private LocalDateTime createdAt;
-    private String status;          // Could use enum for SUCCESS/FAILED
+    private String status;
     private int loginAttempt;
     private boolean isLocked;
-    private LocalDateTime lockEndTime;  // Nullable
+    private LocalDateTime lockEndTime;
 
     public LoginLog(int loginID, int userID, LocalDateTime createdAt, String status, int loginAttempt, boolean isLocked, LocalDateTime lockEndTime) {
         this.loginID = loginID;
@@ -20,6 +19,10 @@ public class LoginLog {
         this.loginAttempt = loginAttempt;
         this.isLocked = isLocked;
         this.lockEndTime = lockEndTime;
+    }
+
+    public LoginLog() {
+        
     }
 
     public int getLoginID() {

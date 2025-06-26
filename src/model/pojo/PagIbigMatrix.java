@@ -2,11 +2,10 @@ package model.pojo;
 
 import java.math.BigDecimal;
 
-
 public class PagIbigMatrix {
     private int pagIbigID;
     private BigDecimal minGrossIncome;
-    private BigDecimal maxGrossIncome;      // nullable
+    private BigDecimal maxGrossIncome;
     private BigDecimal employeeRate;
     private BigDecimal employerRate;
     private BigDecimal maxContribution;
@@ -18,6 +17,10 @@ public class PagIbigMatrix {
         this.employeeRate = employeeRate;
         this.employerRate = employerRate;
         this.maxContribution = maxContribution;
+    }
+    
+    public PagIbigMatrix() {
+        
     }
 
     public int getPagIbigID() {

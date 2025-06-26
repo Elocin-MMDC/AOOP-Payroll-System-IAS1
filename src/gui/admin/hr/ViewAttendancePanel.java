@@ -1,16 +1,123 @@
 package gui.admin.hr;
 
 import java.awt.CardLayout;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import javax.swing.JTextField;
+import javax.swing.text.AbstractDocument;
+import model.pojo.Attendance;
+import model.pojo.EmployeeView;
+import service.AttendanceService;
+import service.EmployeeService;
+import util.TimeFormatFilter;
+import util.UIUtil;
 
 public class ViewAttendancePanel extends javax.swing.JPanel {
     
     private final AdminHRPortal hrPortal;
+    private final AttendanceService attendanceService;
+    private final EmployeeService employeeService;
 
     public ViewAttendancePanel(AdminHRPortal hrPortal) {
         this.hrPortal = hrPortal;
+        this.attendanceService = new AttendanceService();
+        this.employeeService = new EmployeeService();
         initComponents();
+        UIUtil.setGreeting(jLabelHelloAdmin, "Admin");
+        applyTimeFilter(jTextFieldClockInTime);
+        applyTimeFilter(jTextFieldClockOutTime);
     }
+    
+    private void applyTimeFilter(JTextField textField) {
+        ((AbstractDocument) textField.getDocument()).setDocumentFilter(new TimeFormatFilter());
+    }
+    
+    public void loadSelectedAttendance(int attendanceID) {
+        Attendance a = attendanceService.getById(attendanceID);
+        if (a == null) {
+            return;
+        }
 
+        EmployeeView efd = employeeService.getEmployeeById(a.getEmployeeID());
+        DateTimeFormatter timeFmt = DateTimeFormatter.ofPattern("HH:mm");
+
+        jTextFieldAttendanceID.setText(String.valueOf(a.getAttendanceID()));
+        jTextFieldAttendanceDate.setText(a.getDate().toString());
+        jTextFieldEmployeeID.setText(String.valueOf(a.getEmployeeID()));
+        jTextFieldFullName.setText(efd.getFirstName() + " " + efd.getLastName());
+        jTextFieldPosition.setText(efd.getPositionTitle());
+        jTextFieldClockInTime.setText(a.getClockIn() != null ? a.getClockIn().format(timeFmt) : "");
+        jTextFieldClockOutTime.setText(a.getClockOut() != null ? a.getClockOut().format(timeFmt) : "");
+        jTextFieldRegularHours.setText(a.getRegularHours() != null ? a.getRegularHours().toPlainString() : "");
+        jTextFieldOvertimeHours.setText(a.getOvertimeHours() != null ? a.getOvertimeHours().toPlainString() : "");
+        jTextFieldStatus.setText(a.getStatus() != null ? a.getStatus() : "");
+    }
+    
+    private void onClickUpdate() {
+        try {
+            int attendanceID = Integer.parseInt(jTextFieldAttendanceID.getText());
+            String clockInStr = jTextFieldClockInTime.getText().trim();
+            String clockOutStr = jTextFieldClockOutTime.getText().trim();
+            
+            if (jTextFieldRegularHours.getText().trim().isEmpty() &&
+                jTextFieldOvertimeHours.getText().trim().isEmpty() && jTextFieldStatus.getText().trim().isEmpty()) {
+                UIUtil.showErrorMessage(this, """
+                                              This attendance record has no clock-out data. Please
+                                              ensure the employee has clocked out before editing.""", "Validation Error");
+                return;
+            }
+
+            if (clockInStr.isEmpty() || clockOutStr.isEmpty()) {
+                UIUtil.showErrorMessage(this, "Clock-in and clock-out time are required.", "Validation Error");
+                return;
+            }
+
+            DateTimeFormatter timeFmt = DateTimeFormatter.ofPattern("HH:mm");
+            LocalTime clockIn, clockOut;
+
+            try {
+                clockIn = LocalTime.parse(clockInStr, timeFmt);
+                clockOut = LocalTime.parse(clockOutStr, timeFmt);
+            } catch (DateTimeParseException e) {
+                UIUtil.showErrorMessage(this, "Invalid time format. Use HH:mm (e.g. 09:00).", "Invalid Format");
+                return;
+            }
+
+            Attendance original = attendanceService.getById(attendanceID);
+            if (original == null) {
+                UIUtil.showErrorMessage(this, "Attendance record not found.", "Error");
+                return;
+            }
+
+            if (clockIn.equals(original.getClockIn()) && clockOut.equals(original.getClockOut())) {
+                UIUtil.showInfoMessage(this, "No changes detected. Update not necessary.", "No Changes");
+                return;
+            }
+
+            boolean success;
+            try {
+                success = attendanceService.updateAttendance(attendanceID, clockIn, clockOut);
+            } catch (IllegalArgumentException e) {
+                UIUtil.showErrorMessage(this, e.getMessage(), "Validation Error");
+                return;
+            }
+
+            if (success) {
+                UIUtil.showInfoMessage(this, "Attendance record updated successfully.", "Success");
+                loadSelectedAttendance(attendanceID);
+                hrPortal.getAttendancePanel().loadAttendanceHistory();
+            } else {
+                UIUtil.showErrorMessage(this, "Failed to update attendance.", "Error");
+            }
+
+        } catch (NumberFormatException e) {
+            UIUtil.showErrorMessage(this, "Invalid attendance ID.", "Error");
+        } catch (Exception ex) {
+            UIUtil.showErrorMessage(this, "Unexpected error: " + ex.getMessage(), "System Error");
+        }
+    }
+    
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
@@ -36,7 +143,7 @@ public class ViewAttendancePanel extends javax.swing.JPanel {
         jLabelRegularHours = new javax.swing.JLabel();
         jTextFieldRegularHours = new javax.swing.JTextField();
         jLabelOvertimeHours = new javax.swing.JLabel();
-        jTextFieldOvertimeHourrs = new javax.swing.JTextField();
+        jTextFieldOvertimeHours = new javax.swing.JTextField();
         jLabelStatus = new javax.swing.JLabel();
         jTextFieldStatus = new javax.swing.JTextField();
         jLabelPosition = new javax.swing.JLabel();
@@ -54,7 +161,7 @@ public class ViewAttendancePanel extends javax.swing.JPanel {
         jLabelHelloAdmin.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         jLabelHelloAdmin.setText("Hello, Admin!");
         jPanel1.add(jLabelHelloAdmin);
-        jLabelHelloAdmin.setBounds(30, 30, 137, 29);
+        jLabelHelloAdmin.setBounds(30, 30, 600, 29);
 
         jLabelViewRecordSmall.setText("Attendance > View Record");
         jPanel1.add(jLabelViewRecordSmall);
@@ -65,7 +172,7 @@ public class ViewAttendancePanel extends javax.swing.JPanel {
         jPanelViewAttendanceBox.setLayout(null);
 
         jTextFieldEmployeeID.setBackground(new java.awt.Color(240, 240, 240));
-        jTextFieldEmployeeID.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldEmployeeID.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldEmployeeID.setEnabled(false);
         jTextFieldEmployeeID.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -122,7 +229,7 @@ public class ViewAttendancePanel extends javax.swing.JPanel {
         jLabelAttendanceID.setBounds(30, 180, 290, 40);
 
         jTextFieldAttendanceID.setBackground(new java.awt.Color(240, 240, 240));
-        jTextFieldAttendanceID.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldAttendanceID.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldAttendanceID.setEnabled(false);
         jTextFieldAttendanceID.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -141,7 +248,7 @@ public class ViewAttendancePanel extends javax.swing.JPanel {
         jLabelAttendanceDate.setBounds(30, 220, 290, 40);
 
         jTextFieldAttendanceDate.setBackground(new java.awt.Color(240, 240, 240));
-        jTextFieldAttendanceDate.setDisabledTextColor(new java.awt.Color(255, 255, 255));
+        jTextFieldAttendanceDate.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldAttendanceDate.setEnabled(false);
         jTextFieldAttendanceDate.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -152,6 +259,7 @@ public class ViewAttendancePanel extends javax.swing.JPanel {
         jTextFieldAttendanceDate.setBounds(180, 220, 350, 40);
 
         jTextFieldFullName.setBackground(new java.awt.Color(240, 240, 240));
+        jTextFieldFullName.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldFullName.setEnabled(false);
         jTextFieldFullName.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -169,6 +277,7 @@ public class ViewAttendancePanel extends javax.swing.JPanel {
         jPanelViewAttendanceBox.add(jLabelClockInTime);
         jLabelClockInTime.setBounds(540, 180, 290, 40);
 
+        jTextFieldClockInTime.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldClockInTime.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jTextFieldClockInTimeActionPerformed(evt);
@@ -185,6 +294,7 @@ public class ViewAttendancePanel extends javax.swing.JPanel {
         jPanelViewAttendanceBox.add(jLabelClockOutTime);
         jLabelClockOutTime.setBounds(540, 220, 290, 40);
 
+        jTextFieldClockOutTime.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldClockOutTime.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jTextFieldClockOutTimeActionPerformed(evt);
@@ -202,6 +312,7 @@ public class ViewAttendancePanel extends javax.swing.JPanel {
         jLabelRegularHours.setBounds(540, 260, 290, 40);
 
         jTextFieldRegularHours.setBackground(new java.awt.Color(240, 240, 240));
+        jTextFieldRegularHours.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldRegularHours.setEnabled(false);
         jTextFieldRegularHours.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -219,15 +330,16 @@ public class ViewAttendancePanel extends javax.swing.JPanel {
         jPanelViewAttendanceBox.add(jLabelOvertimeHours);
         jLabelOvertimeHours.setBounds(540, 300, 290, 40);
 
-        jTextFieldOvertimeHourrs.setBackground(new java.awt.Color(240, 240, 240));
-        jTextFieldOvertimeHourrs.setEnabled(false);
-        jTextFieldOvertimeHourrs.addActionListener(new java.awt.event.ActionListener() {
+        jTextFieldOvertimeHours.setBackground(new java.awt.Color(240, 240, 240));
+        jTextFieldOvertimeHours.setDisabledTextColor(new java.awt.Color(0, 0, 0));
+        jTextFieldOvertimeHours.setEnabled(false);
+        jTextFieldOvertimeHours.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jTextFieldOvertimeHourrsActionPerformed(evt);
+                jTextFieldOvertimeHoursActionPerformed(evt);
             }
         });
-        jPanelViewAttendanceBox.add(jTextFieldOvertimeHourrs);
-        jTextFieldOvertimeHourrs.setBounds(690, 300, 350, 40);
+        jPanelViewAttendanceBox.add(jTextFieldOvertimeHours);
+        jTextFieldOvertimeHours.setBounds(690, 300, 350, 40);
 
         jLabelStatus.setBackground(new java.awt.Color(255, 255, 255));
         jLabelStatus.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
@@ -238,6 +350,7 @@ public class ViewAttendancePanel extends javax.swing.JPanel {
         jLabelStatus.setBounds(540, 340, 290, 40);
 
         jTextFieldStatus.setBackground(new java.awt.Color(240, 240, 240));
+        jTextFieldStatus.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldStatus.setEnabled(false);
         jTextFieldStatus.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -256,6 +369,7 @@ public class ViewAttendancePanel extends javax.swing.JPanel {
         jLabelPosition.setBounds(30, 340, 290, 40);
 
         jTextFieldPosition.setBackground(new java.awt.Color(240, 240, 240));
+        jTextFieldPosition.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextFieldPosition.setEnabled(false);
         jTextFieldPosition.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -273,6 +387,7 @@ public class ViewAttendancePanel extends javax.swing.JPanel {
 
     private void jButtonUpdateActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonUpdateActionPerformed
         // TODO add your handling code here:
+        onClickUpdate();
     }//GEN-LAST:event_jButtonUpdateActionPerformed
 
     private void jLabelBackMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabelBackMouseClicked
@@ -309,9 +424,9 @@ public class ViewAttendancePanel extends javax.swing.JPanel {
         // TODO add your handling code here:
     }//GEN-LAST:event_jTextFieldRegularHoursActionPerformed
 
-    private void jTextFieldOvertimeHourrsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldOvertimeHourrsActionPerformed
+    private void jTextFieldOvertimeHoursActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldOvertimeHoursActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jTextFieldOvertimeHourrsActionPerformed
+    }//GEN-LAST:event_jTextFieldOvertimeHoursActionPerformed
 
     private void jTextFieldStatusActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldStatusActionPerformed
         // TODO add your handling code here:
@@ -344,7 +459,7 @@ public class ViewAttendancePanel extends javax.swing.JPanel {
     private javax.swing.JTextField jTextFieldClockOutTime;
     private javax.swing.JTextField jTextFieldEmployeeID;
     private javax.swing.JTextField jTextFieldFullName;
-    private javax.swing.JTextField jTextFieldOvertimeHourrs;
+    private javax.swing.JTextField jTextFieldOvertimeHours;
     private javax.swing.JTextField jTextFieldPosition;
     private javax.swing.JTextField jTextFieldRegularHours;
     private javax.swing.JTextField jTextFieldStatus;

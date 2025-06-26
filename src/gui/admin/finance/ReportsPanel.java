@@ -1,14 +1,86 @@
 package gui.admin.finance;
 
-import java.awt.CardLayout;
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import javax.swing.table.DefaultTableModel;
+import model.pojo.MonthlyPayrollSummaryReportView;
+import service.PayrollService;
+import util.UIUtil;
 
 public class ReportsPanel extends javax.swing.JPanel {
 
     private final AdminFinancePortal financePortal;
+    private final PayrollService payrollService;
     
     public ReportsPanel(AdminFinancePortal financePortal) {
         this.financePortal = financePortal;
+        this.payrollService = new PayrollService();
         initComponents();
+        UIUtil.setGreeting(jLabelHelloAdmin, "Admin");
+        loadPayPeriodComboBox();
+        loadReport();
+    }
+    
+    protected final void loadPayPeriodComboBox() {
+        Map<String, LocalDate[]> periodMap = payrollService.getFormattedPayPeriods();
+        jComboBoxPayPeriod.removeAllItems();
+        jComboBoxPayPeriod.addItem("Select");
+        for (String label : periodMap.keySet()) {
+            jComboBoxPayPeriod.addItem(label);
+        }
+        jComboBoxPayPeriod.addActionListener(e -> loadReport());
+    }
+    
+    private void loadReport() {
+        String selectedPayPeriod = (String) jComboBoxPayPeriod.getSelectedItem();
+
+        String[] cols = {
+            "Employee ID",
+            "Gross Income",
+            "SSS",
+            "PhilHealth",
+            "PagIbig",
+            "Withholding Tax",
+            "Net Income"
+        };
+
+        UIUtil.styleTable(jTablePayrollReport, cols);
+        DefaultTableModel model = (DefaultTableModel) jTablePayrollReport.getModel();
+        model.setRowCount(0);
+
+        if (selectedPayPeriod == null || selectedPayPeriod.equals("Select")) {
+            model.setRowCount(0);
+            return;
+        }
+
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH);
+            YearMonth yearMonth = YearMonth.parse(selectedPayPeriod, formatter);
+
+            LocalDate payStartDate = yearMonth.atDay(1);
+            LocalDate payEndDate = yearMonth.atEndOfMonth();
+
+            List<MonthlyPayrollSummaryReportView> report = payrollService.getReport(payStartDate, payEndDate);
+
+            for (MonthlyPayrollSummaryReportView pr : report) {
+                model.addRow(new Object[]{
+                    pr.getEmployeeID(),
+                    pr.getGrossIncome(),
+                    pr.getSssContribution(),
+                    pr.getPhilHealthContribution(),
+                    pr.getPagIbigContribution(),
+                    pr.getWithholdingTax(),
+                    pr.getNetIncome()
+                });
+            }
+        } catch (DateTimeParseException e) {
+            UIUtil.showErrorMessage(this, "Invalid pay period format: " + selectedPayPeriod, "Parse Error");
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -19,11 +91,11 @@ public class ReportsPanel extends javax.swing.JPanel {
         jLabelHelloAdmin = new javax.swing.JLabel();
         jLabelReportsSmall = new javax.swing.JLabel();
         jPanelPayrollBox = new javax.swing.JPanel();
-        jComboBoxFilterByPayPeriod = new javax.swing.JComboBox<>();
-        jLabelilterByPayPeriod = new javax.swing.JLabel();
+        jComboBoxPayPeriod = new javax.swing.JComboBox<>();
+        jLabelSelectByPayPeriod = new javax.swing.JLabel();
         jLabelPayrollRecords = new javax.swing.JLabel();
         jScrollPane1 = new javax.swing.JScrollPane();
-        jTableEmployeeRecords = new javax.swing.JTable();
+        jTablePayrollReport = new javax.swing.JTable();
         jButtonGenerateReport = new javax.swing.JButton();
 
         setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
@@ -38,7 +110,7 @@ public class ReportsPanel extends javax.swing.JPanel {
         jLabelHelloAdmin.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         jLabelHelloAdmin.setText("Hello, Admin!");
         jPanel1.add(jLabelHelloAdmin);
-        jLabelHelloAdmin.setBounds(30, 30, 137, 29);
+        jLabelHelloAdmin.setBounds(30, 30, 570, 29);
 
         jLabelReportsSmall.setText("Reports");
         jPanel1.add(jLabelReportsSmall);
@@ -48,23 +120,23 @@ public class ReportsPanel extends javax.swing.JPanel {
         jPanelPayrollBox.setBorder(javax.swing.BorderFactory.createTitledBorder(""));
         jPanelPayrollBox.setLayout(null);
 
-        jComboBoxFilterByPayPeriod.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        jComboBoxFilterByPayPeriod.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Select", "January 2024", "February 2024", "March 2024", "April 2024", "May 2024", "June 2024", "July 2024", "August 2024", "September 2024", "October 2024", "November 2024", "December 2024" }));
-        jComboBoxFilterByPayPeriod.addActionListener(new java.awt.event.ActionListener() {
+        jComboBoxPayPeriod.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        jComboBoxPayPeriod.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Select" }));
+        jComboBoxPayPeriod.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jComboBoxFilterByPayPeriodActionPerformed(evt);
+                jComboBoxPayPeriodActionPerformed(evt);
             }
         });
-        jPanelPayrollBox.add(jComboBoxFilterByPayPeriod);
-        jComboBoxFilterByPayPeriod.setBounds(170, 30, 260, 40);
+        jPanelPayrollBox.add(jComboBoxPayPeriod);
+        jComboBoxPayPeriod.setBounds(170, 30, 260, 40);
 
-        jLabelilterByPayPeriod.setBackground(new java.awt.Color(255, 255, 255));
-        jLabelilterByPayPeriod.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
-        jLabelilterByPayPeriod.setForeground(new java.awt.Color(0, 0, 0));
-        jLabelilterByPayPeriod.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        jLabelilterByPayPeriod.setText("Select Pay Period :");
-        jPanelPayrollBox.add(jLabelilterByPayPeriod);
-        jLabelilterByPayPeriod.setBounds(20, 30, 140, 40);
+        jLabelSelectByPayPeriod.setBackground(new java.awt.Color(255, 255, 255));
+        jLabelSelectByPayPeriod.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        jLabelSelectByPayPeriod.setForeground(new java.awt.Color(0, 0, 0));
+        jLabelSelectByPayPeriod.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        jLabelSelectByPayPeriod.setText("Select Pay Period :");
+        jPanelPayrollBox.add(jLabelSelectByPayPeriod);
+        jLabelSelectByPayPeriod.setBounds(20, 30, 140, 40);
 
         jLabelPayrollRecords.setBackground(new java.awt.Color(255, 255, 255));
         jLabelPayrollRecords.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
@@ -74,49 +146,49 @@ public class ReportsPanel extends javax.swing.JPanel {
         jPanelPayrollBox.add(jLabelPayrollRecords);
         jLabelPayrollRecords.setBounds(20, 90, 180, 40);
 
-        jTableEmployeeRecords.setAutoCreateRowSorter(true);
-        jTableEmployeeRecords.setModel(new javax.swing.table.DefaultTableModel(
+        jTablePayrollReport.setAutoCreateRowSorter(true);
+        jTablePayrollReport.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null}
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null}
             },
             new String [] {
-                "Payslip ID", "Employee ID", "Pay Period", "Name", "Gross Income", "Total Deductions", "Total Allowances", "Net Income"
+                "Employee ID", "Gross Income", "SSS", "PhilHealth", "PagIbig", "Withholding Tax", "Net Income"
             }
         ) {
             Class[] types = new Class [] {
-                java.lang.Integer.class, java.lang.Integer.class, java.lang.String.class, java.lang.String.class, java.lang.Double.class, java.lang.Double.class, java.lang.Double.class, java.lang.Double.class
+                java.lang.Integer.class, java.lang.Double.class, java.lang.Double.class, java.lang.Double.class, java.lang.Double.class, java.lang.Double.class, java.lang.Double.class
             };
             boolean[] canEdit = new boolean [] {
-                false, false, false, false, false, false, false, false
+                false, false, false, false, false, false, false
             };
 
             public Class getColumnClass(int columnIndex) {
@@ -127,12 +199,12 @@ public class ReportsPanel extends javax.swing.JPanel {
                 return canEdit [columnIndex];
             }
         });
-        jTableEmployeeRecords.setFocusable(false);
-        jTableEmployeeRecords.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
-        jTableEmployeeRecords.setShowGrid(true);
-        jTableEmployeeRecords.getTableHeader().setResizingAllowed(false);
-        jTableEmployeeRecords.getTableHeader().setReorderingAllowed(false);
-        jScrollPane1.setViewportView(jTableEmployeeRecords);
+        jTablePayrollReport.setFocusable(false);
+        jTablePayrollReport.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        jTablePayrollReport.setShowGrid(true);
+        jTablePayrollReport.getTableHeader().setResizingAllowed(false);
+        jTablePayrollReport.getTableHeader().setReorderingAllowed(false);
+        jScrollPane1.setViewportView(jTablePayrollReport);
 
         jPanelPayrollBox.add(jScrollPane1);
         jScrollPane1.setBounds(20, 130, 1020, 420);
@@ -155,24 +227,24 @@ public class ReportsPanel extends javax.swing.JPanel {
         add(jPanel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, -1, -1));
     }// </editor-fold>//GEN-END:initComponents
 
-    private void jComboBoxFilterByPayPeriodActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxFilterByPayPeriodActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jComboBoxFilterByPayPeriodActionPerformed
-
     private void jButtonGenerateReportActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonGenerateReportActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_jButtonGenerateReportActionPerformed
 
+    private void jComboBoxPayPeriodActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxPayPeriodActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jComboBoxPayPeriodActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButtonGenerateReport;
-    private javax.swing.JComboBox<String> jComboBoxFilterByPayPeriod;
+    private javax.swing.JComboBox<String> jComboBoxPayPeriod;
     private javax.swing.JLabel jLabelHelloAdmin;
     private javax.swing.JLabel jLabelPayrollRecords;
     private javax.swing.JLabel jLabelReportsSmall;
-    private javax.swing.JLabel jLabelilterByPayPeriod;
+    private javax.swing.JLabel jLabelSelectByPayPeriod;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanelPayrollBox;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JTable jTableEmployeeRecords;
+    private javax.swing.JTable jTablePayrollReport;
     // End of variables declaration//GEN-END:variables
 }

@@ -3,19 +3,30 @@ package model.pojo;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-
 public class SupportRequest extends Request {
-    private String assignedTeam;  // HR, Finance, IT
-    private String severity;      // Low, Medium, High
+    private int ticketID;
+    private String assignedTeam;
+    private String severity;
     private String subject;
     private String description;
+    private Integer resolvedBy;
 
-    public SupportRequest(String assignedTeam, String severity, String subject, String description, int requestID, int employeeID, LocalDate date, String status, Integer approvedOrResolvedBy, LocalDateTime createdAt, LocalDateTime updatedAt) {
-        super(requestID, employeeID, date, status, approvedOrResolvedBy, createdAt, updatedAt);
+    public SupportRequest(int ticketID, String assignedTeam, String severity, String subject, String description, Integer resolvedBy, int employeeID, LocalDate date, String status, LocalDateTime createdAt, LocalDateTime updatedAt) {
+        super(employeeID, date, status, createdAt, updatedAt);
+        this.ticketID = ticketID;
         this.assignedTeam = assignedTeam;
         this.severity = severity;
         this.subject = subject;
         this.description = description;
+        this.resolvedBy = resolvedBy;
+    }
+
+    public SupportRequest() {
+
+    }
+
+    public int getTicketID() {
+        return ticketID;
     }
 
     public String getAssignedTeam() {
@@ -34,12 +45,10 @@ public class SupportRequest extends Request {
         return description;
     }
 
-    @Override
-    public int getRequestID() {
-        return requestID;
+    public Integer getResolvedBy() {
+        return resolvedBy;
     }
 
-    @Override
     public int getEmployeeID() {
         return employeeID;
     }
@@ -55,11 +64,6 @@ public class SupportRequest extends Request {
     }
 
     @Override
-    public Integer getApprovedOrResolvedBy() {
-        return approvedOrResolvedBy;
-    }
-
-    @Override
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -67,6 +71,10 @@ public class SupportRequest extends Request {
     @Override
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
+    }
+
+    public void setTicketID(int ticketID) {
+        this.ticketID = ticketID;
     }
 
     public void setAssignedTeam(String assignedTeam) {
@@ -85,9 +93,8 @@ public class SupportRequest extends Request {
         this.description = description;
     }
 
-    @Override
-    public void setRequestID(int requestID) {
-        this.requestID = requestID;
+    public void setResolvedBy(Integer resolvedBy) {
+        this.resolvedBy = resolvedBy;
     }
 
     @Override
@@ -103,11 +110,6 @@ public class SupportRequest extends Request {
     @Override
     public void setStatus(String status) {
         this.status = status;
-    }
-
-    @Override
-    public void setApprovedOrResolvedBy(Integer approvedOrResolvedBy) {
-        this.approvedOrResolvedBy = approvedOrResolvedBy;
     }
 
     @Override

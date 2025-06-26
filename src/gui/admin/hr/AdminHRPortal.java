@@ -4,12 +4,8 @@ import gui.employee.EmployeePortal;
 import gui.login.LoginPortal;
 import java.awt.CardLayout;
 import java.awt.Color;
-import java.awt.Font;
-import java.awt.Image;
-import java.awt.Toolkit;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import util.UIUtil;
 
 public class AdminHRPortal extends javax.swing.JFrame {
     private final Color defaultPanelColor = Color.WHITE;
@@ -27,11 +23,10 @@ public class AdminHRPortal extends javax.swing.JFrame {
     private final OvertimePanel overtimePanel;
     private final ViewOvertimePanel viewOvertimePanel;
     
-
     public AdminHRPortal() {
-        setFlatLafUI();
+        UIUtil.setFlatLafUI();
+        setAdminWindowIcon();
         this.setTitle("MotorPH HR Portal");
-        setWindowIcon();
         hrDashboardPanel = new HRDashboardPanel(this);
         ticketsPanel = new TicketsPanel(this);
         viewTicketPanel = new ViewTicketPanel(this);
@@ -50,21 +45,56 @@ public class AdminHRPortal extends javax.swing.JFrame {
         this.setLocationRelativeTo(null);
     }
     
-    private void setFlatLafUI() {
-        try {
-            com.formdev.flatlaf.FlatIntelliJLaf.setup();
-        } catch (Exception ex) {
-            System.err.println("Failed to initialize FlatLaf.");
-        }
+    public HRDashboardPanel getHRDashboardPanel() {
+        return hrDashboardPanel;
     }
     
-    private void setWindowIcon() {
-        try {
-            Image icon = Toolkit.getDefaultToolkit().getImage(getClass().getResource("/images/title-green-motor-logo.png"));
-            this.setIconImage(icon);
-        } catch (Exception e) {
-            System.err.println("Icon image not found.");
-        }
+    public TicketsPanel getTicketsPanel() {
+        return ticketsPanel;
+    }
+    
+    public ViewTicketPanel getViewTicketPanel() {
+        return viewTicketPanel;
+    }
+    
+    public EmployeesPanel getEmployeesPanel() {
+        return employeesPanel;
+    }
+    
+    public CreateEmployeePanel getCreateEmployeePanel() {
+        return createEmployeePanel;
+    }
+    
+    public ViewEmployeePanel getViewEmployeePanel() {
+        return viewEmployeePanel;
+    }
+    
+    public AttendancePanel getAttendancePanel() {
+        return attendancePanel;
+    }
+    
+    public ViewAttendancePanel getViewAttendancePanel() {
+        return viewAttendancePanel;
+    }
+    
+    public LeavesPanel getLeavesPanel() {
+        return leavesPanel;
+    }
+    
+    public ViewLeavePanel getViewLeavePanel() {
+        return viewLeavePanel;
+    }
+    
+    public OvertimePanel getOvertimePanel() {
+        return overtimePanel;
+    }
+    
+    public ViewOvertimePanel getViewOvertimePanel() {
+        return viewOvertimePanel;
+    }
+    
+    private void setAdminWindowIcon() {
+        UIUtil.setWindowIcon(this, "/images/title-green-motor-logo.png");
     }
     
     public JPanel getPanelParentCard() {
@@ -87,40 +117,15 @@ public class AdminHRPortal extends javax.swing.JFrame {
     }
     
     private void addHooverEffectToTabs() {
-        addHoverEffect(jLabelHRDashboard, jPanelHRDashboard);
-        addHoverEffect(jLabelEmployeePortal, jPanelEmployeePortal);
-        addHoverEffect(jLabelTickets, jPanelTickets);
-        addHoverEffect(jLabelEmployees, jPanelEmployees);
-        addHoverEffect(jLabelAttendance, jPanelAttendance);
-        addHoverEffect(jLabelLeaves, jPanelLeaves);
-        addHoverEffect(jLabelOvertime, jPanelOvertime);
+        UIUtil.addHoverEffect(jLabelHRDashboard, jPanelHRDashboard, defaultPanelColor, hoverPanelColor);
+        UIUtil.addHoverEffect(jLabelEmployeePortal, jPanelEmployeePortal, defaultPanelColor, hoverPanelColor);
+        UIUtil.addHoverEffect(jLabelTickets, jPanelTickets, defaultPanelColor, hoverPanelColor);
+        UIUtil.addHoverEffect(jLabelEmployees, jPanelEmployees, defaultPanelColor, hoverPanelColor);
+        UIUtil.addHoverEffect(jLabelAttendance, jPanelAttendance, defaultPanelColor, hoverPanelColor);
+        UIUtil.addHoverEffect(jLabelLeaves, jPanelLeaves, defaultPanelColor, hoverPanelColor);
+        UIUtil.addHoverEffect(jLabelOvertime, jPanelOvertime, defaultPanelColor, hoverPanelColor);
     }
 
-    private void addHoverEffect(JLabel label, JPanel panel) {
-        Font originalFont = label.getFont();
-
-        label.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                panel.setBackground(hoverPanelColor);
-                label.setFont(originalFont.deriveFont(Font.BOLD));
-                label.setForeground(Color.WHITE);
-            }
-
-            @Override
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                panel.setBackground(defaultPanelColor);
-                label.setFont(originalFont);
-                label.setForeground(Color.BLACK);
-            }
-        });
-    }
-
-    /**
-     * This method is called from within the constructor to initialize the form.
-     * WARNING: Do NOT modify this code. The content of this method is always
-     * regenerated by the Form Editor.
-     */
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
@@ -388,14 +393,9 @@ public class AdminHRPortal extends javax.swing.JFrame {
 
     private void jLabelLogOutMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabelLogOutMouseClicked
         // TODO add your handling code here:
-        int confirm = JOptionPane.showConfirmDialog(
-                this,
-                "Are you sure you want to log out?",
-                "Confirm Logout",
-                JOptionPane.YES_NO_OPTION
-        );
+        boolean confirmed = UIUtil.showConfirmation(this, "Are you sure you want to log out?");
 
-        if (confirm == JOptionPane.YES_OPTION) {
+        if (confirmed) {
             LoginPortal loginPortal = new LoginPortal();
             loginPortal.setVisible(true);
             this.dispose();

@@ -3,10 +3,9 @@ package model.pojo;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-
 public class PayrollProcess {
     private int payrollProcessID;
-    private int processedBy; // references UserAccount.userID
+    private int processedBy;
     private LocalDate dateProcessed;
     private LocalDate payStartDate;
     private LocalDate payEndDate;
@@ -21,6 +20,10 @@ public class PayrollProcess {
         this.payEndDate = payEndDate;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+    }
+
+    public PayrollProcess() {
+
     }
 
     public int getPayrollProcessID() {

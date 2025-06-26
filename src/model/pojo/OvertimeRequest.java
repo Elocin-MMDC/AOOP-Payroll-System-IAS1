@@ -4,17 +4,28 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-
 public class OvertimeRequest extends Request {
+    private int overtimeID;
     private LocalDate overtimeWorkDate;
     private BigDecimal overtimeHours;
     private String reason;
+    private Integer approvedBy;
 
-    public OvertimeRequest(LocalDate overtimeWorkDate, BigDecimal overtimeHours, String reason, int requestID, int employeeID, LocalDate date, String status, Integer approvedOrResolvedBy, LocalDateTime createdAt, LocalDateTime updatedAt) {
-        super(requestID, employeeID, date, status, approvedOrResolvedBy, createdAt, updatedAt);
+    public OvertimeRequest(int overtimeID, LocalDate overtimeWorkDate, BigDecimal overtimeHours, String reason, Integer approvedBy, int employeeID, LocalDate date, String status, LocalDateTime createdAt, LocalDateTime updatedAt) {
+        super(employeeID, date, status, createdAt, updatedAt);
+        this.overtimeID = overtimeID;
         this.overtimeWorkDate = overtimeWorkDate;
         this.overtimeHours = overtimeHours;
         this.reason = reason;
+        this.approvedBy = approvedBy;
+    }
+
+    public OvertimeRequest() {
+
+    }
+
+    public int getOvertimeID() {
+        return overtimeID;
     }
 
     public LocalDate getOvertimeWorkDate() {
@@ -29,9 +40,8 @@ public class OvertimeRequest extends Request {
         return reason;
     }
 
-    @Override
-    public int getRequestID() {
-        return requestID;
+    public Integer getApprovedBy() {
+        return approvedBy;
     }
 
     @Override
@@ -50,11 +60,6 @@ public class OvertimeRequest extends Request {
     }
 
     @Override
-    public Integer getApprovedOrResolvedBy() {
-        return approvedOrResolvedBy;
-    }
-
-    @Override
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -62,6 +67,10 @@ public class OvertimeRequest extends Request {
     @Override
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
+    }
+
+    public void setOvertimeID(int overtimeID) {
+        this.overtimeID = overtimeID;
     }
 
     public void setOvertimeWorkDate(LocalDate overtimeWorkDate) {
@@ -76,9 +85,8 @@ public class OvertimeRequest extends Request {
         this.reason = reason;
     }
 
-    @Override
-    public void setRequestID(int requestID) {
-        this.requestID = requestID;
+    public void setApprovedBy(Integer approvedBy) {
+        this.approvedBy = approvedBy;
     }
 
     @Override
@@ -94,11 +102,6 @@ public class OvertimeRequest extends Request {
     @Override
     public void setStatus(String status) {
         this.status = status;
-    }
-
-    @Override
-    public void setApprovedOrResolvedBy(Integer approvedOrResolvedBy) {
-        this.approvedOrResolvedBy = approvedOrResolvedBy;
     }
 
     @Override

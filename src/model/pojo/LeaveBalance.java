@@ -2,7 +2,6 @@ package model.pojo;
 
 import java.time.LocalDateTime;
 
-
 public class LeaveBalance {
     private int leaveBalanceID;
     private int employeeID;
@@ -22,6 +21,10 @@ public class LeaveBalance {
         this.remainingDays = remainingDays;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+    }
+
+    public LeaveBalance() {
+
     }
 
     public int getLeaveBalanceID() {
