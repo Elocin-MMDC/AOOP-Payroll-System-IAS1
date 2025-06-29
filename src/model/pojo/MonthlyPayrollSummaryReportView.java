@@ -4,9 +4,9 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public class MonthlyPayrollSummaryReportView {
-    private int employeeID;
     private LocalDate payStartDate;
     private LocalDate payEndDate;
+    private int employeeID;
     private String employeeName;
     private String position;
     private String department;

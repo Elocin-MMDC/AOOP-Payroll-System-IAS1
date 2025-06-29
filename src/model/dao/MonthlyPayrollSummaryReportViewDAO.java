@@ -28,9 +28,9 @@ public class MonthlyPayrollSummaryReportViewDAO {
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     MonthlyPayrollSummaryReportView record = new MonthlyPayrollSummaryReportView();
-                    record.setEmployeeID(rs.getInt("employeeID"));
                     record.setPayStartDate(rs.getDate("payStartDate").toLocalDate());
                     record.setPayEndDate(rs.getDate("payEndDate").toLocalDate());
+                    record.setEmployeeID(rs.getInt("employeeID"));
                     record.setEmployeeName(rs.getString("employeeName"));
                     record.setPosition(rs.getString("position"));
                     record.setDepartment(rs.getString("department"));
