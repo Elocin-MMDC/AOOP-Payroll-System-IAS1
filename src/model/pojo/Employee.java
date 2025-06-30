@@ -171,5 +171,10 @@ public class Employee {
     public void setDeletedAt(LocalDateTime deletedAt) {
         this.deletedAt = deletedAt;
     }
+
+    @Override
+    public String toString() {
+        return "Employee{" + "employeeID=" + employeeID + ", lastName=" + lastName + ", firstName=" + firstName + ", birthday=" + birthday + ", phoneNumber=" + phoneNumber + ", genderID=" + genderID + ", addressID=" + addressID + ", workStatusID=" + workStatusID + ", positionID=" + positionID + ", govID=" + govID + ", salaryID=" + salaryID + ", supervisorID=" + supervisorID + ", createdAt=" + createdAt + ", updatedAt=" + updatedAt + ", isDeleted=" + isDeleted + ", deletedAt=" + deletedAt + '}';
+    }
     
 }

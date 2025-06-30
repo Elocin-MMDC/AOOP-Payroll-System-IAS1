@@ -295,4 +295,9 @@ public class EmployeeViewForHR {
         this.isDeleted = isDeleted;
     }
 
+    @Override
+    public String toString() {
+        return "EmployeeViewForHR{" + "employeeID=" + employeeID + ", lastName=" + lastName + ", firstName=" + firstName + ", birthday=" + birthday + ", phoneNumber=" + phoneNumber + ", gender=" + gender + ", workStatus=" + workStatus + ", departmentName=" + departmentName + ", positionTitle=" + positionTitle + ", street=" + street + ", barangay=" + barangay + ", city=" + city + ", province=" + province + ", zipCode=" + zipCode + ", sssNumber=" + sssNumber + ", philHealthNumber=" + philHealthNumber + ", tin=" + tin + ", pagIbigNumber=" + pagIbigNumber + ", basicSalary=" + basicSalary + ", semiMonthlyRate=" + semiMonthlyRate + ", hourlyRate=" + hourlyRate + ", supervisorName=" + supervisorName + ", role=" + role + ", riceSubsidy=" + riceSubsidy + ", phoneAllowance=" + phoneAllowance + ", clothingAllowance=" + clothingAllowance + ", isDeleted=" + isDeleted + '}';
+    }
+
 }

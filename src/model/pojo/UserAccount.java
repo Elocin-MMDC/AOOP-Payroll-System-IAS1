@@ -110,5 +110,10 @@ public class UserAccount {
     public void setDeactivatedAt(LocalDateTime deactivatedAt) {
         this.deactivatedAt = deactivatedAt;
     }
+
+    @Override
+    public String toString() {
+        return "UserAccount{" + "userID=" + userID + '}';
+    }
     
 }

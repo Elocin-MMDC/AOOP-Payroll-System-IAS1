@@ -248,5 +248,10 @@ public class EmployeeView {
     public String getFullNameWithSurnameFirst() {
         return getLastName() + ", " + getFirstName();
     }
+
+    @Override
+    public String toString() {
+        return "EmployeeView{" + "employeeID=" + employeeID + ", lastName=" + lastName + ", firstName=" + firstName + ", birthday=" + birthday + ", phoneNumber=" + phoneNumber + ", gender=" + gender + ", workStatus=" + workStatus + ", departmentName=" + departmentName + ", positionTitle=" + positionTitle + ", fullAddress=" + fullAddress + ", sssNumber=" + sssNumber + ", philHealthNumber=" + philHealthNumber + ", tin=" + tin + ", pagIbigNumber=" + pagIbigNumber + ", basicSalary=" + basicSalary + ", semiMonthlyRate=" + semiMonthlyRate + ", hourlyRate=" + hourlyRate + ", supervisorName=" + supervisorName + ", role=" + role + ", riceSubsidy=" + riceSubsidy + ", phoneAllowance=" + phoneAllowance + ", clothingAllowance=" + clothingAllowance + ", isDeleted=" + isDeleted + '}';
+    }
     
 }

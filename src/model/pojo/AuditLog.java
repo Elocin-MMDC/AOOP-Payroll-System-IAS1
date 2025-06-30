@@ -1,6 +1,7 @@
 package model.pojo;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class AuditLog {
     private int auditID;
@@ -100,5 +101,10 @@ public class AuditLog {
     public void setNewValue(String newValue) {
         this.newValue = newValue;
     }
-    
+
+    @Override
+    public String toString() {
+        return "AuditLog{" + "auditID=" + auditID + ", userID=" + userID + ", createdAt=" + createdAt.format(DateTimeFormatter.ISO_DATE) + ", action=" + action + ", entityModified=" + entityModified + ", entityID=" + entityID + ", attributeModified=" + attributeModified + ", oldValue=" + oldValue + ", newValue=" + newValue + '}';
+    }
+
 }
