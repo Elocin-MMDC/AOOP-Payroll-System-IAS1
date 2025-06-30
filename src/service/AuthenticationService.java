@@ -260,12 +260,19 @@ public class AuthenticationService {
         }
         return efd.getFirstName() + " " + efd.getLastName();
     }
+    
+    public class AuthenticationException extends Exception {
+
+        public AuthenticationException(String message) {
+            super(message);
+        }
+    }
    
 }
 
-class AuthenticationException extends Exception {
-
-    public AuthenticationException(String message) {
-        super(message);
-    }
-}
+//public class AuthenticationException extends Exception {
+//
+//    public AuthenticationException(String message) {
+//        super(message);
+//    }
+//}
