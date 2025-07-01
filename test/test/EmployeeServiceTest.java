@@ -109,6 +109,20 @@ public class EmployeeServiceTest {
             assertTrue("String should contain employee ID", s.contains(String.valueOf(id)));
         });
     }
+    
+    // Verifies toString() output for getEmpHRViewById() as HR Admin
+    @Test
+    public void testGetEmpHRViewById_toString_asHrAdmin() {
+        int id = 10001;
+        runAs(hrAdmin, () -> {
+            EmployeeViewForHR vh = service.getEmpHRViewById(id);
+            assertNotNull(vh);
+            String s = vh.toString();
+            System.out.println("   HR-view toString() = " + s);
+            assertFalse("toString() should not be blank", s.isBlank());
+            assertTrue("String should contain employee ID", s.contains(String.valueOf(id)));
+        });
+    }
 
     // Verifies toString() output for getEmployeeById() as Finance Admin
     @Test
