@@ -6,6 +6,7 @@ import java.util.List;
 import javax.swing.table.DefaultTableModel;
 import model.pojo.Payslip;
 import service.PayrollService;
+import service.ReportGenerationService;
 import util.Session;
 import util.UIUtil;
 
@@ -13,10 +14,12 @@ public class PayrollPanel extends javax.swing.JPanel {
 
     private final AdminFinancePortal financePortal;
     private final PayrollService payrollService;
+    private final ReportGenerationService reportGenerationService;
     
     public PayrollPanel(AdminFinancePortal financePortal) {
         this.financePortal = financePortal;
         this.payrollService = new PayrollService();
+        this.reportGenerationService = new ReportGenerationService();
         initComponents();
         UIUtil.setGreeting(jLabelHelloAdmin, "Admin");
         loadPayrollRecords();
@@ -304,7 +307,20 @@ public class PayrollPanel extends javax.swing.JPanel {
     }//GEN-LAST:event_jComboBoxMonthActionPerformed
 
     private void jButtonGeneratePayslipActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonGeneratePayslipActionPerformed
-        // TODO add your handling code here:
+            int selectedRow = jTablePayrollRecords.getSelectedRow();
+            if (selectedRow == -1) {
+                UIUtil.showErrorMessage(this, "Please select a payslip record from the table.", "No Selection");
+                return;
+            }
+
+            int payslipID = (int) jTablePayrollRecords.getValueAt(selectedRow, 0);
+
+            try {
+                reportGenerationService.generatePayslipReport(payslipID);
+            } catch (Exception e) {
+                e.printStackTrace();
+                UIUtil.showErrorMessage(this, "Failed to generate payslip: " + e.getMessage(), "Error");
+            }
     }//GEN-LAST:event_jButtonGeneratePayslipActionPerformed
 
     private void jButtonBatchProcessActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonBatchProcessActionPerformed

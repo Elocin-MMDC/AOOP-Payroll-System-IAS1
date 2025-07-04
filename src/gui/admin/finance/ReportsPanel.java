@@ -10,16 +10,19 @@ import java.util.Map;
 import javax.swing.table.DefaultTableModel;
 import model.pojo.MonthlyPayrollSummaryReportView;
 import service.PayrollService;
+import service.ReportGenerationService;
 import util.UIUtil;
 
 public class ReportsPanel extends javax.swing.JPanel {
 
     private final AdminFinancePortal financePortal;
     private final PayrollService payrollService;
+    private final ReportGenerationService reportGenerationService;
     
     public ReportsPanel(AdminFinancePortal financePortal) {
         this.financePortal = financePortal;
         this.payrollService = new PayrollService();
+        this.reportGenerationService = new ReportGenerationService();
         initComponents();
         UIUtil.setGreeting(jLabelHelloAdmin, "Admin");
         loadPayPeriodComboBox();
@@ -228,7 +231,26 @@ public class ReportsPanel extends javax.swing.JPanel {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButtonGenerateReportActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonGenerateReportActionPerformed
-        // TODO add your handling code here:
+        String selectedPeriod = (String) jComboBoxPayPeriod.getSelectedItem();
+
+        if (selectedPeriod == null || selectedPeriod.equals("Select")) {
+            UIUtil.showErrorMessage(this, "Please select a pay period.", "No Period Selected");
+            return;
+        }
+
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH);
+            YearMonth yearMonth = YearMonth.parse(selectedPeriod, formatter);
+            int payMonth = yearMonth.getMonthValue();
+            int payYear = yearMonth.getYear();
+
+            ReportGenerationService reportService = new ReportGenerationService();
+            reportService.generatePayrollSummaryReport(payMonth, payYear);
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            UIUtil.showErrorMessage(this, "Failed to generate report:\n" + ex.getMessage(), "Error");
+        }
     }//GEN-LAST:event_jButtonGenerateReportActionPerformed
 
     private void jComboBoxPayPeriodActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxPayPeriodActionPerformed
