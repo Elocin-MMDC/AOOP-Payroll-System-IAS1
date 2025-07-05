@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.21.3.final using JasperReports Library version 6.21.3-4a3078d20785ebe464f18037d738d12fc98c13cf  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="EmployeePayslip" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="ef347f30-adf7-4204-b2e9-f033166df6b4">
+	<property name="com.jaspersoft.studio.data.sql.tables">
+		<![CDATA[cGF5cm9sbHN5c3RlbV9kYi5wYXlzbGlwdmlldyAsMTUsMTUsZjNmYmI2MmYtMjg4Yi00NTM3LWJl
+OTktMjUzYmFhMGIxOWRiOw==]]>
+	</property>
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="AOOP"/>
+        <parameter name="payslipID" class="java.lang.Integer"/>
+	<queryString language="SQL">
+		<![CDATA[
+                    SELECT *
+                    FROM payrollsystem_db.payslipview
+                    WHERE payslipID = $P{payslipID}
+                ]]>
+	</queryString>
+	<field name="payslipID" class="java.lang.Integer">
+		<property name="com.jaspersoft.studio.field.name" value="payslipID"/>
+		<property name="com.jaspersoft.studio.field.label" value="payslipID"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="payslipview"/>
+	</field>
+	<field name="employeeID" class="java.lang.Integer">
+		<property name="com.jaspersoft.studio.field.name" value="employeeID"/>
+		<property name="com.jaspersoft.studio.field.label" value="employeeID"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="payslipview"/>
+	</field>
+	<field name="employeeName" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="employeeName"/>
+		<property name="com.jaspersoft.studio.field.label" value="employeeName"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="payslipview"/>
+	</field>
+	<field name="payStartDate" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="payStartDate"/>
+		<property name="com.jaspersoft.studio.field.label" value="payStartDate"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="payslipview"/>
+	</field>
+	<field name="payEndDate" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="payEndDate"/>
+		<property name="com.jaspersoft.studio.field.label" value="payEndDate"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="payslipview"/>
+	</field>
+	<field name="employeePositionDepartment" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="employeePositionDepartment"/>
+		<property name="com.jaspersoft.studio.field.label" value="employeePositionDepartment"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="payslipview"/>
+	</field>
+	<field name="monthlyRate" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="monthlyRate"/>
+		<property name="com.jaspersoft.studio.field.label" value="monthlyRate"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="payslipview"/>
+	</field>
+	<field name="hourlyRate" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="hourlyRate"/>
+		<property name="com.jaspersoft.studio.field.label" value="hourlyRate"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="payslipview"/>
+	</field>
+	<field name="regularHours" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="regularHours"/>
+		<property name="com.jaspersoft.studio.field.label" value="regularHours"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="payslipview"/>
+	</field>
+	<field name="overtimeHours" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="overtimeHours"/>
+		<property name="com.jaspersoft.studio.field.label" value="overtimeHours"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="payslipview"/>
+	</field>
+	<field name="grossIncome" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="grossIncome"/>
+		<property name="com.jaspersoft.studio.field.label" value="grossIncome"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="payslipview"/>
+	</field>
+	<field name="riceSubsidy" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="riceSubsidy"/>
+		<property name="com.jaspersoft.studio.field.label" value="riceSubsidy"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="payslipview"/>
+	</field>
+	<field name="phoneAllowance" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="phoneAllowance"/>
+		<property name="com.jaspersoft.studio.field.label" value="phoneAllowance"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="payslipview"/>
+	</field>
+	<field name="clothingAllowance" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="clothingAllowance"/>
+		<property name="com.jaspersoft.studio.field.label" value="clothingAllowance"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="payslipview"/>
+	</field>
+	<field name="totalBenefits" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="totalBenefits"/>
+		<property name="com.jaspersoft.studio.field.label" value="totalBenefits"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="payslipview"/>
+	</field>
+	<field name="sssContribution" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="sssContribution"/>
+		<property name="com.jaspersoft.studio.field.label" value="sssContribution"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="payslipview"/>
+	</field>
+	<field name="philHealthContribution" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="philHealthContribution"/>
+		<property name="com.jaspersoft.studio.field.label" value="philHealthContribution"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="payslipview"/>
+	</field>
+	<field name="pagIbigContribution" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="pagIbigContribution"/>
+		<property name="com.jaspersoft.studio.field.label" value="pagIbigContribution"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="payslipview"/>
+	</field>
+	<field name="withholdingTax" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="withholdingTax"/>
+		<property name="com.jaspersoft.studio.field.label" value="withholdingTax"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="payslipview"/>
+	</field>
+	<field name="totalDeductions" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="totalDeductions"/>
+		<property name="com.jaspersoft.studio.field.label" value="totalDeductions"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="payslipview"/>
+	</field>
+	<field name="netIncome" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="netIncome"/>
+		<property name="com.jaspersoft.studio.field.label" value="netIncome"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="payslipview"/>
+	</field>
+	<background>
+		<band height="802" splitType="Stretch">
+			<image>
+				<reportElement x="-20" y="-3" width="595" height="802" uuid="ee1d6662-f1b6-4662-896b-47fbb69d31e4"/>
+				<imageExpression><![CDATA["\\images\\employee-payslip.png"]]></imageExpression>
+			</image>
+			<textField>
+				<reportElement x="167" y="235" width="110" height="22" uuid="8a5fd613-d144-4a92-8573-43b84a6eaec7"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{employeeID}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="167" y="214" width="110" height="22" uuid="d5e126a5-6565-4e39-b11f-6ee3df893501"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{payslipID}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="167" y="257" width="110" height="24" uuid="77ecea4a-ab85-4bde-a595-365c7538a2d7">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{employeeName}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="406" y="257" width="109" height="24" uuid="f12af1ee-d138-46d9-9b5b-eb15c2847e30">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{employeePositionDepartment}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="406" y="235" width="109" height="22" uuid="b1f6327c-338d-4aee-a5f2-2d5c964bbc24"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{payEndDate}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="406" y="214" width="109" height="22" uuid="1606ea8f-2f23-4acb-bd96-2a9df3f13b05"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{payStartDate}]]></textFieldExpression>
+			</textField>
+			<textField pattern="₱ #,##0.00">
+				<reportElement x="412" y="354" width="100" height="17" uuid="4512fddd-0ae4-4b19-9c28-c38899a8c83a">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{hourlyRate}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="412" y="388" width="100" height="20" uuid="866f5bce-0817-4269-a7a2-f492568814b0">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{overtimeHours}]]></textFieldExpression>
+			</textField>
+			<textField pattern="₱ #,##0.00">
+				<reportElement x="412" y="408" width="100" height="18" uuid="6139f458-7d5f-4ebc-8e57-7e24e8b4cfd8">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="7" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{grossIncome}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="412" y="371" width="100" height="17" uuid="e26176c2-a45a-47a0-950f-4fa87d5b4f0f">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{regularHours}]]></textFieldExpression>
+			</textField>
+			<textField pattern="₱ #,##0.00">
+				<reportElement x="412" y="337" width="100" height="17" uuid="c83caf89-32e5-42a0-b4b2-3894c9007a78">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{monthlyRate}]]></textFieldExpression>
+			</textField>
+			<textField pattern="₱ #,##0.00">
+				<reportElement x="412" y="516" width="100" height="18" uuid="c7f30752-b3a1-49c3-a7dc-dacdf0882ee4">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="7" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{totalBenefits}]]></textFieldExpression>
+			</textField>
+			<textField pattern="₱ #,##0.00">
+				<reportElement x="412" y="642" width="100" height="18" uuid="e49a7d2b-c5f1-4ccd-b1ab-38fa9e0d4c8a">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="7" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{totalDeductions}]]></textFieldExpression>
+			</textField>
+			<textField pattern="₱ #,##0.00">
+				<reportElement x="412" y="750" width="100" height="18" uuid="3e5dc01d-91ec-4153-a2fb-25b2f9f0911e">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="7" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{netIncome}]]></textFieldExpression>
+			</textField>
+			<textField pattern="₱ #,##0.00">
+				<reportElement x="412" y="480" width="100" height="17" uuid="03cbb4de-5ad1-49a8-940c-842863e1be67">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{phoneAllowance}]]></textFieldExpression>
+			</textField>
+			<textField pattern="₱ #,##0.00">
+				<reportElement x="412" y="463" width="100" height="17" uuid="e3c17243-eb2b-450d-b1f7-ffecb0c6914a">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{riceSubsidy}]]></textFieldExpression>
+			</textField>
+			<textField pattern="₱ #,##0.00">
+				<reportElement x="412" y="497" width="100" height="19" uuid="f773b808-60bd-4d62-81cb-34c31a3a3856">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{clothingAllowance}]]></textFieldExpression>
+			</textField>
+			<textField pattern="₱ #,##0.00">
+				<reportElement x="412" y="588" width="100" height="17" uuid="b0d793f3-e8a0-4c28-a20a-d61d11fec4e6">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{philHealthContribution}]]></textFieldExpression>
+			</textField>
+			<textField pattern="₱ #,##0.00">
+				<reportElement x="412" y="605" width="100" height="17" uuid="e4c01f2c-1d03-45d6-bc16-7b71df088233">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{pagIbigContribution}]]></textFieldExpression>
+			</textField>
+			<textField pattern="₱ #,##0.00">
+				<reportElement x="412" y="571" width="100" height="17" uuid="31adfd1f-8696-4243-92e3-868bdf80c3bf">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{sssContribution}]]></textFieldExpression>
+			</textField>
+			<textField pattern="₱ #,##0.00">
+				<reportElement x="412" y="622" width="100" height="20" uuid="269d7bef-2ad4-4f90-833b-35bf13bfc416">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{withholdingTax}]]></textFieldExpression>
+			</textField>
+			<textField pattern="₱ #,##0.00">
+				<reportElement x="412" y="730" width="100" height="20" uuid="a135865b-a2a0-4ac3-8fb5-c88f7ea2c65c">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{totalDeductions}]]></textFieldExpression>
+			</textField>
+			<textField pattern="₱ #,##0.00">
+				<reportElement x="412" y="713" width="100" height="17" uuid="5687800b-a01d-4226-96ac-7cf3cd1a6ff2">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{totalBenefits}]]></textFieldExpression>
+			</textField>
+			<textField pattern="₱ #,##0.00">
+				<reportElement x="412" y="696" width="100" height="17" uuid="a671c645-2d46-4d01-b1dd-9256f46f4c20">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{grossIncome}]]></textFieldExpression>
+			</textField>
+		</band>
+	</background>
+</jasperReport>
