@@ -4,6 +4,7 @@ import java.util.List;
 import javax.swing.table.DefaultTableModel;
 import model.pojo.Payslip;
 import service.PayrollService;
+import service.ReportService;
 import util.Session;
 import util.UIUtil;
 
@@ -11,10 +12,12 @@ public class PayslipPanel extends javax.swing.JPanel {
     
     private final EmployeePortal employeePortal;
     private final PayrollService payrollService;
+    private final ReportService reportService;
 
     public PayslipPanel(EmployeePortal employeePortal) {
         this.employeePortal = employeePortal;
         this.payrollService = new PayrollService();
+        this.reportService = new ReportService();
         initComponents();
         UIUtil.setGreeting(jLabelHelloEmployee, "Employee");
         loadPayslipRecords();
@@ -51,6 +54,18 @@ public class PayslipPanel extends javax.swing.JPanel {
         }
         
         UIUtil.installSearchFilter(jTablePayslipRecords, jTextFieldSearch, 0, 1, 2, 3, 4, 5, 6);
+    }
+    
+    private void generatePayslip() {
+        int row = jTablePayslipRecords.getSelectedRow();
+        if (row == -1) {
+            UIUtil.showErrorMessage(this, "Please select a payslip.", "No Selection");
+            return;
+        }
+
+        int payslipID = (int) jTablePayslipRecords.getValueAt(row, 0);
+
+        reportService.generatePayslip(payslipID);
     }
 
     @SuppressWarnings("unchecked")
@@ -197,6 +212,7 @@ public class PayslipPanel extends javax.swing.JPanel {
 
     private void jButtonGeneratePayslipActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonGeneratePayslipActionPerformed
         // TODO add your handling code here:
+        generatePayslip();
     }//GEN-LAST:event_jButtonGeneratePayslipActionPerformed
 
     private void jTextFieldSearchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldSearchActionPerformed

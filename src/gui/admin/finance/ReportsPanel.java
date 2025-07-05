@@ -10,16 +10,19 @@ import java.util.Map;
 import javax.swing.table.DefaultTableModel;
 import model.pojo.MonthlyPayrollSummaryReportView;
 import service.PayrollService;
+import service.ReportService;
 import util.UIUtil;
 
 public class ReportsPanel extends javax.swing.JPanel {
 
     private final AdminFinancePortal financePortal;
     private final PayrollService payrollService;
+    private final ReportService reportService;
     
     public ReportsPanel(AdminFinancePortal financePortal) {
         this.financePortal = financePortal;
         this.payrollService = new PayrollService();
+        this.reportService = new ReportService();
         initComponents();
         UIUtil.setGreeting(jLabelHelloAdmin, "Admin");
         loadPayPeriodComboBox();
@@ -78,6 +81,28 @@ public class ReportsPanel extends javax.swing.JPanel {
                     pr.getNetIncome()
                 });
             }
+        } catch (DateTimeParseException e) {
+            UIUtil.showErrorMessage(this, "Invalid pay period format: " + selectedPayPeriod, "Parse Error");
+        }
+    }
+    
+    private void generateMonthlyPayrollSummary() {
+        String selectedPayPeriod = (String) jComboBoxPayPeriod.getSelectedItem();
+        
+        if (selectedPayPeriod == null || selectedPayPeriod.equals("Select")) {
+            UIUtil.showErrorMessage(this, "Please select a pay period.", "No Selection");
+            return;
+        }
+        
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH);
+            YearMonth yearMonth = YearMonth.parse(selectedPayPeriod, formatter);
+
+            LocalDate payStartDate = yearMonth.atDay(1);
+            LocalDate payEndDate = yearMonth.atEndOfMonth();
+
+            reportService.generateMonthlyPayrollSummary(payStartDate, payEndDate);
+
         } catch (DateTimeParseException e) {
             UIUtil.showErrorMessage(this, "Invalid pay period format: " + selectedPayPeriod, "Parse Error");
         }
@@ -229,6 +254,7 @@ public class ReportsPanel extends javax.swing.JPanel {
 
     private void jButtonGenerateReportActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonGenerateReportActionPerformed
         // TODO add your handling code here:
+        generateMonthlyPayrollSummary();
     }//GEN-LAST:event_jButtonGenerateReportActionPerformed
 
     private void jComboBoxPayPeriodActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxPayPeriodActionPerformed

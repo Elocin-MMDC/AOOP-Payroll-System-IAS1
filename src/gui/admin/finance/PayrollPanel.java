@@ -6,6 +6,7 @@ import java.util.List;
 import javax.swing.table.DefaultTableModel;
 import model.pojo.Payslip;
 import service.PayrollService;
+import service.ReportService;
 import util.Session;
 import util.UIUtil;
 
@@ -13,10 +14,12 @@ public class PayrollPanel extends javax.swing.JPanel {
 
     private final AdminFinancePortal financePortal;
     private final PayrollService payrollService;
+    private final ReportService reportService;
     
     public PayrollPanel(AdminFinancePortal financePortal) {
         this.financePortal = financePortal;
         this.payrollService = new PayrollService();
+        this.reportService = new ReportService();
         initComponents();
         UIUtil.setGreeting(jLabelHelloAdmin, "Admin");
         loadPayrollRecords();
@@ -92,6 +95,18 @@ public class PayrollPanel extends javax.swing.JPanel {
         } catch (Exception ex) {
             UIUtil.showErrorMessage(this, ex.getMessage(), "Error");
         }
+    }
+    
+    private void generatePayslip() {
+        int row = jTablePayrollRecords.getSelectedRow();
+        if (row == -1) {
+            UIUtil.showErrorMessage(this, "Please select a payslip.", "No Selection");
+            return;
+        }
+
+        int payslipID = (int) jTablePayrollRecords.getValueAt(row, 0);
+
+        reportService.generatePayslip(payslipID);
     }
 
     @SuppressWarnings("unchecked")
@@ -305,6 +320,7 @@ public class PayrollPanel extends javax.swing.JPanel {
 
     private void jButtonGeneratePayslipActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonGeneratePayslipActionPerformed
         // TODO add your handling code here:
+        generatePayslip();
     }//GEN-LAST:event_jButtonGeneratePayslipActionPerformed
 
     private void jButtonBatchProcessActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonBatchProcessActionPerformed
