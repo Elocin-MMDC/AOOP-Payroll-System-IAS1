@@ -110,10 +110,10 @@ public class ViewEmployeePanel extends javax.swing.JPanel {
 
         // Address
         jTextFieldStreet.setText(e.getStreet());
-        jTextFieldBarangay.setText(e.getBarangay());
+        jTextFieldBarangay.setText(e.getBarangay() != null ? e.getBarangay() : "");
         jTextFieldCity.setText(e.getCity());
-        jTextFieldProvince.setText(e.getProvince());
-        jTextFieldZipCode.setText(e.getZipCode());
+        jTextFieldProvince.setText(e.getProvince() != null ? e.getProvince() : "");
+        jTextFieldZipCode.setText(e.getZipCode() != null ? e.getZipCode() : "");
 
         // GovInfo
         jTextFieldSssNumber.setText(e.getSssNumber());
