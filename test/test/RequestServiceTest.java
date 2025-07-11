@@ -183,7 +183,7 @@ public class RequestServiceTest {
     @Test
     public void testGetSupportHistoryByTeam_asITAdmin() {
         runAs(itAdmin, () -> {
-            List<SupportRequest> list = service.getSupportHistoryByTeam("Finance");
+            List<SupportRequest> list = service.getSupportHistoryByTeam("IT");
             System.out.println("   IT team tickets=" + list.size());
             assertNotNull(list);
         });
