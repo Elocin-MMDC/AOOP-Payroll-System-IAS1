@@ -392,13 +392,6 @@ public class EmployeeService {
         if (!ValidationUtil.isValidZip(zipCode)) {
             throw new ValidationException("Invalid ZIP code: must be exactly 4 digits.");
         }
-        
-        Integer supervisorID = supervisorFullName.equals("Select") ? null : employeeDao.getIdByFullName(supervisorFullName);
-
-        if (supervisorID != null && supervisorID == employeeID) {
-            throw new ValidationException("An employee cannot be their own supervisor.");
-        }
-        
         if (!ValidationUtil.isValidSSS(sssNumber)) {
             throw new ValidationException("Invalid SSS number: must follow NN-NNNNNNN-N format.");
         }
@@ -432,6 +425,8 @@ public class EmployeeService {
         barangay = barangay.isEmpty() ? null : barangay;
         province = province.isEmpty() ? null : province;
         zipCode = zipCode.isEmpty() ? null : zipCode;
+
+        Integer supervisorID = supervisorFullName.equals("Select") ? null : employeeDao.getIdByFullName(supervisorFullName);
 
         List<AuditLog> logs = new ArrayList<>();
         int userID = userDao.getUserIDByEmployeeID(employeeID);
