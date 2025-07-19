@@ -69,8 +69,6 @@ The MotorPH Payroll System is designed to streamline payroll processing, attenda
 ├── util       → Utility classes (formatting, validation, time helpers)
 ```
 
-### Installation
-
 ## Installation Guide
 1. Install your preferred **Java IDE**.
 2. Clone the repository:
