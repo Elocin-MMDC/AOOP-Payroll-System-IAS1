@@ -55,7 +55,7 @@ The MotorPH Payroll System is designed to streamline payroll processing, attenda
 - Apache Ant
 - MySQL Connector/J (JDBC driver)
 
-### Project Structure
+## Project Structure
 ```sh
 /src
 ├── config     → Database configuration (host, port, credentials)
