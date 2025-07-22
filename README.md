@@ -70,10 +70,10 @@ The MotorPH Payroll System is designed to streamline payroll processing, attenda
 
 ## Installation Guide
 
-Follow the steps below to set up and run the **MotorPH Payroll System** on your local machine.
+Follow the steps below to set up and run the **Expanded MotorPH Payroll System** on your local machine.
 
 ### 1. Download and Import the Database
-- Download the databse [here](https://drive.google.com/drive/folders/1qhpnCyMusWkFoJuPneg2_Btt5n2cLY9y)
+- Download the database [here](https://drive.google.com/drive/folders/1qhpnCyMusWkFoJuPneg2_Btt5n2cLY9y)
 - Open **MySQL Workbench** and import the `.sql` file.
 
 ### 2. Clone the Project Repository
@@ -87,7 +87,10 @@ Follow the steps below to set up and run the **MotorPH Payroll System** on your 
 
 ### 4. Configure Database Connection
 - Locate `db.properties` inside the `config` package
-- Update the line: `db.password=<your_mysql_password>`
+- Update the line:
+   ```sh
+   db.password=<your_mysql_password>
+   ```
 
 ### 5. Run the Program
 - Locate the `main` folder
@@ -101,7 +104,9 @@ Follow the steps below to set up and run the **MotorPH Payroll System** on your 
 
 ## Group Information  
 **Section:** A2101
+
 **Group #:** 5
+
 **Group Members:**  
 - Christine Joy Cortes
 - Eldan Eunice Sinsuan
