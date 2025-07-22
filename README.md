@@ -32,7 +32,7 @@ The MotorPH Payroll System is designed to streamline payroll processing, attenda
 | Role         | Capabilities |
 |--------------|-------------|
 | **Employee** | Attendance, leave/overtime requests, payslip downloads, ticket submissions |
-| **HR Admin** | Employee management, leave/overtime approvals, ticket resolution |
+| **HR Admin** | Employee information management, leave/overtime approvals, ticket resolution |
 | **Finance Admin** | Payroll processing, payslip/report generation, financial ticket handling |
 | **IT Admin** | Account and role management, audit monitoring, system support tickets |
 
@@ -42,8 +42,6 @@ The MotorPH Payroll System is designed to streamline payroll processing, attenda
 - **Database**: MySQL 8.x (3NF schema)
 - **Build Tool**: Apache Ant
 - **Reporting**: JasperReports 6.21.4
-- **Layout**:
-
 
 ## Setup Instructions
 
@@ -54,40 +52,59 @@ The MotorPH Payroll System is designed to streamline payroll processing, attenda
 - NetBeans (recommended)
 - Apache Ant
 - MySQL Connector/J (JDBC driver)
+- MySQL Workbench
 
 ## Project Structure
 ```sh
 /src
 ├── config     → Database configuration (host, port, credentials)
 ├── db         → Database connection logic and helper classes
-├── gui        → Java Swing GUI components and views
-├── images     → Image assets (icons, logos, buttons)
-├── main       → Main application launcher and global settings
-├── model      → Data model classes (e.g., Employee, Payroll, Leave)
-├── report     → JasperReports integration and report templates
-├── service    → Business logic (payroll computation, leave approval)
-├── util       → Utility classes (formatting, validation, time helpers)
+├── gui        → Java Swing GUI components
+├── images     → Image assets (e.g., icons, logos, buttons)
+├── main       → Main application launcher
+├── model      → Data model classes (POJOs and DAOs)
+├── report     → JasperReports templates (`.jrxml` files) for payslip and payroll summary report
+├── service    → Business logic (e.g., payroll computation, leave approval)
+├── util       → Utility classes (e.g., formatting, validation, time helpers)
 ```
 
 ## Installation Guide
-1. Install your preferred **Java IDE**.
-2. Clone the repository:
+
+Follow the steps below to set up and run the **MotorPH Payroll System** on your local machine.
+
+### 1. Download and Import the Database
+- Download the `.sql` file from Google Drive:
+  [MotorPH Payroll Database](https://drive.google.com/drive/folders/1qhpnCyMusWkFoJuPneg2_Btt5n2cLY9y)
+- Open **MySQL Workbench** and import the `.sql` file.
+
+### 2. Clone the Project Repository
+- Clone this repository using NetBeans IDE:
    ```sh
    git clone https://github.com/christinecortes/AOOP-MS2-Group5-MotorPH-Payroll-System.git
    ```
-3. Open the project in your IDE.
-4. Include all **JAR dependencies** in the build path.
-5. Navigate to `src/Main`.
-6. Run the **main application file**.
-7. The **login page** should appear.
+   
+### 3. Add Required JAR Libraries
+- Download the required `.jar` files (Libraries and Test Libraries):  
+  [Download JARs](https://drive.google.com/drive/folders/1PZ7GBN76EP9zNCvsA3R-sjfsiQbR_dzb)
+
+### 4. Configure Database Connection
+- Locate `db.properties` inside the `config` package
+- Update the line: `db.password=<your_mysql_password>`
+
+### 5. Run the Program
+- Locate the `main` folder
+- Run the `Main.java` class and the login page should appear
+
+### 6. Testing
+- For easy testing, refer to this User Credentials file
+  [User Credentials](https://docs.google.com/spreadsheets/d/16MrkNip6DTjcfLcmSQfE7_dYUw759qAN9bfhcEROtWI/edit?usp=sharing)
 
 ## Resources
 - [SRS](https://docs.google.com/document/d/1nIvOd65wtFtxNH383_rP0zqJDt6_VVciq4r5KMVLbks/edit?usp=sharing)
-- [User Credentials](https://docs.google.com/spreadsheets/d/16MrkNip6DTjcfLcmSQfE7_dYUw759qAN9bfhcEROtWI/edit?usp=sharing)
 
 ## Group Information  
 **Section:** A2101
-
+**Group #:** 5
 **Group Members:**  
 - Christine Joy Cortes
 - Eldan Eunice Sinsuan
@@ -95,4 +112,3 @@ The MotorPH Payroll System is designed to streamline payroll processing, attenda
 - Mara Julienne Rose Cervantes
 - Sarah Nicole Hular
 - Jose Martin Marquez
-  
