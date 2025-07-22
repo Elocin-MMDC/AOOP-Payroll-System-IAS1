@@ -1,4 +1,4 @@
-# MotorPH Payroll System
+# Expanded MotorPH Payroll System
 
 A secure, desktop-based payroll and HR management system for small to mid-sized organizations. This enhanced version transitions from a CSV-based prototype into a robust, database-integrated Java application with modular architecture, role-based access, automated payroll, leave tracking, and report generation features.
 
@@ -63,7 +63,7 @@ The MotorPH Payroll System is designed to streamline payroll processing, attenda
 ├── images     → Image assets (e.g., icons, logos, buttons)
 ├── main       → Main application launcher
 ├── model      → Data model classes (POJOs and DAOs)
-├── report     → JasperReports templates (`.jrxml` files) for payslip and payroll summary report
+├── report     → JasperReports templates (.jrxml files) for payslip and payroll summary report
 ├── service    → Business logic (e.g., payroll computation, leave approval)
 ├── util       → Utility classes (e.g., formatting, validation, time helpers)
 ```
@@ -73,8 +73,7 @@ The MotorPH Payroll System is designed to streamline payroll processing, attenda
 Follow the steps below to set up and run the **MotorPH Payroll System** on your local machine.
 
 ### 1. Download and Import the Database
-- Download the `.sql` file from Google Drive:
-  [MotorPH Payroll Database](https://drive.google.com/drive/folders/1qhpnCyMusWkFoJuPneg2_Btt5n2cLY9y)
+- Download the databse [here](https://drive.google.com/drive/folders/1qhpnCyMusWkFoJuPneg2_Btt5n2cLY9y)
 - Open **MySQL Workbench** and import the `.sql` file.
 
 ### 2. Clone the Project Repository
@@ -84,8 +83,7 @@ Follow the steps below to set up and run the **MotorPH Payroll System** on your 
    ```
    
 ### 3. Add Required JAR Libraries
-- Download the required `.jar` files (Libraries and Test Libraries):  
-  [Download JARs](https://drive.google.com/drive/folders/1PZ7GBN76EP9zNCvsA3R-sjfsiQbR_dzb)
+- Download the required `.jar` files (Libraries and Test Libraries) [here](https://drive.google.com/drive/folders/1PZ7GBN76EP9zNCvsA3R-sjfsiQbR_dzb)
 
 ### 4. Configure Database Connection
 - Locate `db.properties` inside the `config` package
@@ -96,8 +94,7 @@ Follow the steps below to set up and run the **MotorPH Payroll System** on your 
 - Run the `Main.java` class and the login page should appear
 
 ### 6. Testing
-- For easy testing, refer to this User Credentials file
-  [User Credentials](https://docs.google.com/spreadsheets/d/16MrkNip6DTjcfLcmSQfE7_dYUw759qAN9bfhcEROtWI/edit?usp=sharing)
+- For easy testing, refer to the User Credentials file [here](https://docs.google.com/spreadsheets/d/16MrkNip6DTjcfLcmSQfE7_dYUw759qAN9bfhcEROtWI/edit?usp=sharing)
 
 ## Resources
 - [SRS](https://docs.google.com/document/d/1nIvOd65wtFtxNH383_rP0zqJDt6_VVciq4r5KMVLbks/edit?usp=sharing)
