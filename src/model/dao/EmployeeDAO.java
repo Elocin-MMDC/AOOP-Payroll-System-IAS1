@@ -2,12 +2,15 @@ package model.dao;
 
 import db.DBConnection;
 import model.pojo.Employee;
+import util.PiiCryptoUtil;
 import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 public class EmployeeDAO {
+
+    private static final String SSS_CONTEXT = "MotorPH:govinformation:sssNumber:v1";
     
     // Retieve employee by ID
     public Employee getById(int employeeID) {
@@ -292,7 +295,7 @@ public class EmployeeDAO {
           JOIN GovInformation g ON e.govID = g.govID
          WHERE e.employeeID = ?
            AND e.birthday = ?
-           AND g.sssNumber = ?
+           AND g.sssNumberLookup = ?
          LIMIT 1
     """;
 
@@ -301,7 +304,7 @@ public class EmployeeDAO {
 
             ps.setInt(1, employeeID);
             ps.setDate(2, Date.valueOf(birthday));
-            ps.setString(3, sssNumber);
+            ps.setBytes(3, PiiCryptoUtil.lookupHmac(sssNumber, SSS_CONTEXT));
 
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next();
