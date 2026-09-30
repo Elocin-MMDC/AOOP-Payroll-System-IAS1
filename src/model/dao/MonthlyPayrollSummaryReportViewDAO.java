@@ -2,12 +2,18 @@ package model.dao;
 
 import db.DBConnection;
 import model.pojo.MonthlyPayrollSummaryReportView;
+import util.PiiCryptoUtil;
 import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MonthlyPayrollSummaryReportViewDAO {
+
+    private static final String SSS_CONTEXT = "MotorPH:govinformation:sssNumber:v1";
+    private static final String PHILHEALTH_CONTEXT = "MotorPH:govinformation:philHealthNumber:v1";
+    private static final String TIN_CONTEXT = "MotorPH:govinformation:tin:v1";
+    private static final String PAGIBIG_CONTEXT = "MotorPH:govinformation:pagIbigNumber:v1";
     
     // Retrieve report by pay period
     public List<MonthlyPayrollSummaryReportView> getByPayPeriod(LocalDate payStartDate, LocalDate payEndDate) {
@@ -35,13 +41,13 @@ public class MonthlyPayrollSummaryReportViewDAO {
                     record.setPosition(rs.getString("position"));
                     record.setDepartment(rs.getString("department"));
                     record.setGrossIncome(rs.getBigDecimal("grossIncome"));
-                    record.setSssNumber(rs.getString("sssNumber"));
+                    record.setSssNumber(PiiCryptoUtil.decrypt(rs.getString("sssNumber"), SSS_CONTEXT));
                     record.setSssContribution(rs.getBigDecimal("sssContribution"));
-                    record.setPhilHealthNumber(rs.getString("philHealthNumber"));
+                    record.setPhilHealthNumber(PiiCryptoUtil.decrypt(rs.getString("philHealthNumber"), PHILHEALTH_CONTEXT));
                     record.setPhilHealthContribution(rs.getBigDecimal("philHealthContribution"));
-                    record.setPagIbigNumber(rs.getString("pagIbigNumber"));
+                    record.setPagIbigNumber(PiiCryptoUtil.decrypt(rs.getString("pagIbigNumber"), PAGIBIG_CONTEXT));
                     record.setPagIbigContribution(rs.getBigDecimal("pagIbigContribution"));
-                    record.setTin(rs.getString("tin"));
+                    record.setTin(PiiCryptoUtil.decrypt(rs.getString("tin"), TIN_CONTEXT));
                     record.setWithholdingTax(rs.getBigDecimal("withholdingTax"));
                     record.setNetIncome(rs.getBigDecimal("netIncome"));
                     records.add(record);
