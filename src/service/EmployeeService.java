@@ -584,8 +584,10 @@ public class EmployeeService {
         log.setEntityModified(entity);
         log.setEntityID(entityID);
         log.setAttributeModified(attr);
-        log.setOldValue(oldVal);
-        log.setNewValue(newVal);
+        boolean sensitiveGovId = "GovInformation".equals(entity) &&
+                ("sssNumber".equals(attr) || "philHealthNumber".equals(attr) || "tin".equals(attr) || "pagIbigNumber".equals(attr));
+        log.setOldValue(sensitiveGovId && oldVal != null ? "[REDACTED]" : oldVal);
+        log.setNewValue(sensitiveGovId && newVal != null ? "[REDACTED]" : newVal);
         return log;
     }
 
