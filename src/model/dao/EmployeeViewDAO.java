@@ -2,11 +2,17 @@ package model.dao;
 
 import db.DBConnection;
 import model.pojo.EmployeeView;
+import util.PiiCryptoUtil;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class EmployeeViewDAO {
+
+    private static final String SSS_CONTEXT = "MotorPH:govinformation:sssNumber:v1";
+    private static final String PHILHEALTH_CONTEXT = "MotorPH:govinformation:philHealthNumber:v1";
+    private static final String TIN_CONTEXT = "MotorPH:govinformation:tin:v1";
+    private static final String PAGIBIG_CONTEXT = "MotorPH:govinformation:pagIbigNumber:v1";
 
     // Retrieve all records from the EmployeeView table
     public List<EmployeeView> getAllEmployees() {
@@ -61,10 +67,10 @@ public class EmployeeViewDAO {
         emp.setDepartmentName(rs.getString("departmentName"));
         emp.setPositionTitle(rs.getString("positionTitle"));
         emp.setFullAddress(rs.getString("fullAddress"));
-        emp.setSssNumber(rs.getString("sssNumber"));
-        emp.setPhilHealthNumber(rs.getString("philHealthNumber"));
-        emp.setTin(rs.getString("tin"));
-        emp.setPagIbigNumber(rs.getString("pagIbigNumber"));
+        emp.setSssNumber(PiiCryptoUtil.decrypt(rs.getString("sssNumber"), SSS_CONTEXT));
+        emp.setPhilHealthNumber(PiiCryptoUtil.decrypt(rs.getString("philHealthNumber"), PHILHEALTH_CONTEXT));
+        emp.setTin(PiiCryptoUtil.decrypt(rs.getString("tin"), TIN_CONTEXT));
+        emp.setPagIbigNumber(PiiCryptoUtil.decrypt(rs.getString("pagIbigNumber"), PAGIBIG_CONTEXT));
         emp.setBasicSalary(rs.getBigDecimal("basicSalary"));
         emp.setSemiMonthlyRate(rs.getBigDecimal("semiMonthlyRate"));
         emp.setHourlyRate(rs.getBigDecimal("hourlyRate"));
