@@ -124,15 +124,58 @@ Run the application normally and verify that authorized Employee/HR screens show
 
 -----------------------------------------------------
 
-# Authenticaton Hardening Team Setup
-This guide sets up the Authentication Hardening for a local development copy of MotorPH.
+# Authentication Hardening Team Setup
 
-Important Prerequisite: PII Encryption at Rest Team Setup must be done first
+# Phase 1: First-Login Reset Enforcement
 
-## Phase I: First-Login Reset Enforcement
+This phase enables required password changes for new accounts and accounts whose passwords are reset by an IT Admin.
 
-## 1. Add a Must Change Password Flag
-run sql script:
+Prerequisite: complete the PII Encryption at Rest setup above and use the local `payrollsystem_db_ias2` database. Apply this migration before testing the authentication flow.
+
+## 1. Update the schema
+
+Run this script once against `payrollsystem_db_ias2`:
+
 ```text
 database/ias2/04_auth_schema_must-change-password.sql
 ```
+
+The migration adds `mustChangePassword` to `UserAccount`. Existing rows keep the migration's initial value of `FALSE`; new account rows default to `TRUE`. To require a password change for an existing account, an IT Admin must use **Reset Password** for that account. Do not rerun this script; the column already exists after a successful run.
+
+## 2. Compile
+
+From the repository root, run:
+
+```text
+ant compile
+```
+
+Expected result: `BUILD SUCCESSFUL`.
+
+## 3. Verify forced password reset
+
+1. Sign in as an IT Admin and open an account record.
+2. Select **Reset Password**, confirm, and copy the temporary password from the dialog. The same password cannot be retrieved after the dialog closes; another reset generates a replacement.
+3. Sign in as that account with the temporary password. The application should require a password change before opening the role portal.
+4. Enter and confirm a new password. The application returns to the login screen after the update.
+5. Sign in with the new password. The account should now proceed to its role portal without another forced reset.
+6. Confirm the reset event appears in the audit log. The `mustChangePassword` flag should be `FALSE` after the new password is accepted.
+
+## Implementation details
+
+- Temporary passwords use Java `SecureRandom` to generate 12 random bytes, encoded as URL-safe Base64 without padding. They are shown to the IT Admin once for delivery. Password resets for this after login is now enforced.
+- At login, `mustChangePassword` determines whether the user must choose a new password before entering the role portal. A successful change clears the flag and returns the user to the login screen.
+- The old dashboard check that hashes and compares the literal `temppassword` is currently commented out. Required changes are enforced by the login flag instead.
+- Password resets are recorded in the audit log as `FORCED_PASSWORD_RESET`.
+
+## Key files
+
+- `database/ias2/04_auth_schema_must-change-password.sql`
+- `src/service/AccountService.java`
+- `src/service/AuthenticationService.java`
+- `src/model/dao/UserAccountDAO.java`
+- `src/gui/admin/it/ViewAccountPanel.java`
+- `src/gui/login/LoginPanel.java`
+- `src/gui/login/EnforcedPasswordResetPanel.java`
+- `src/gui/employee/EmployeeDashboardPanel.java`
+- `test/test/AuthenticationServiceTest.java`
