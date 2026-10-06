@@ -132,8 +132,7 @@ Important Prerequisite: PII Encryption at Rest Team Setup must be done first
 ## Phase I: First-Login Reset Enforcement
 
 ## 1. Add a Must Change Password Flag
-run
+run sql script:
 ```text
 database/ias2/04_auth_schema_must-change-password.sql
 ```
-in MySQL

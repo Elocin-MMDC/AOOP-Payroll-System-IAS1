@@ -162,8 +162,24 @@ public class UserAccountDAO {
         }
     }
 
+    // Update user's password and set mustChangePassword flag to false
     public boolean updatePasswordAndClearMustChange(int userID, String newHashedPassword) {
         String sql = "UPDATE UserAccount SET password = ?, mustChangePassword = FALSE, updatedAt = NOW() WHERE userID = ?";
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, newHashedPassword);
+            ps.setInt(2, userID);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    // Update user's password and set mustChangePassword flag to true
+    public boolean updatePasswordAndEnforceMustChange(int userID, String newHashedPassword) {
+        String sql = "UPDATE UserAccount SET password = ?, mustChangePassword = TRUE, updatedAt = NOW() WHERE userID = ?";
         try (Connection con = DBConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
 

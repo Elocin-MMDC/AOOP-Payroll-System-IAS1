@@ -1,6 +1,15 @@
 package gui.admin.it;
 
+import java.awt.BorderLayout;
 import java.awt.CardLayout;
+import java.awt.FlowLayout;
+import java.awt.Toolkit;
+import java.awt.datatransfer.StringSelection;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
 import model.pojo.EmployeeView;
 import model.pojo.Role;
 import model.pojo.UserAccount;
@@ -58,17 +67,54 @@ public class ViewAccountPanel extends javax.swing.JPanel {
         }
 
         try {
-            boolean success = accountService.resetPassword(userID);
-            if (success) {
+            String newPassword = accountService.resetPassword(userID);
+            if (newPassword != null) {
                 itPortal.getSecurityPanel().loadAuditLogs();
                 itPortal.getSecurityPanel().loadLoginLogs();
-                UIUtil.showInfoMessage(this, "Password has been reset to 'temppassword'.", "Success");
+                showTemporaryPassword(newPassword);
             } else {
                 UIUtil.showErrorMessage(this, "Failed to reset password.", "Error");
             }
         } catch (Exception ex) {
             UIUtil.showErrorMessage(this, ex.getMessage(), "System Error");
         }
+    }
+
+    private void showTemporaryPassword(String password) {
+        JPasswordField passwordField = new JPasswordField(password, 24);
+        char maskedCharacter = passwordField.getEchoChar();
+        JButton visibilityButton = new JButton("Show");
+        JButton copyButton = new JButton("Copy");
+
+        visibilityButton.addActionListener(event -> {
+            boolean currentlyMasked = passwordField.getEchoChar() != 0;
+            passwordField.setEchoChar(currentlyMasked ? (char) 0 : maskedCharacter);
+            visibilityButton.setText(currentlyMasked ? "Hide" : "Show");
+        });
+        copyButton.addActionListener(event -> {
+            try {
+                Toolkit.getDefaultToolkit().getSystemClipboard()
+                        .setContents(new StringSelection(password), null);
+                copyButton.setText("Copied");
+            } catch (IllegalStateException ex) {
+                UIUtil.showErrorMessage(this, "Could not access the system clipboard.", "Copy Failed");
+            }
+        });
+
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
+        actions.add(visibilityButton);
+        actions.add(copyButton);
+
+        JPanel passwordRow = new JPanel(new BorderLayout(8, 0));
+        passwordRow.add(passwordField, BorderLayout.CENTER);
+        passwordRow.add(actions, BorderLayout.EAST);
+
+        JPanel content = new JPanel(new BorderLayout(0, 8));
+        content.add(new JLabel("Temporary password generated. Copy it before closing this window; it cannot be recovered afterward."),
+                BorderLayout.NORTH);
+        content.add(passwordRow, BorderLayout.CENTER);
+
+        JOptionPane.showMessageDialog(this, content, "Temporary Password", JOptionPane.INFORMATION_MESSAGE);
     }
     
     private void updateAccount() {

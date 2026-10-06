@@ -18,7 +18,7 @@ public class EmployeeDashboardPanel extends javax.swing.JPanel {
         UIUtil.setGreeting(jLabelHelloEmployee, "Employee");
         UIUtil.startClock(jLabelDateAndTime, "MMMM dd, yyyy HH:mm:ss");
         loadMetrics();
-        checkTemporaryPassword();
+        // checkTemporaryPassword();
     }
     
     protected final void loadMetrics() {

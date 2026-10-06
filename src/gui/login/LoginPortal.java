@@ -28,8 +28,8 @@ public class LoginPortal extends javax.swing.JFrame {
         return this.jPanelParentCard;
     }
 
-    public void showFirstLoginPassword() {
-        ((java.awt.CardLayout) jPanelParentCard.getLayout()).show(jPanelParentCard, "FirstLoginPassword");
+    public void showEnforcedPasswordReset() {
+        ((java.awt.CardLayout) jPanelParentCard.getLayout()).show(jPanelParentCard, "EnforcedPasswordReset");
     }
 
     public void showLoginPanel() {

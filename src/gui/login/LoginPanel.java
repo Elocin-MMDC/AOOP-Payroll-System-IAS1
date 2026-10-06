@@ -163,11 +163,14 @@ public class LoginPanel extends javax.swing.JPanel {
             return;
         }
 
+        jTextFieldUsername.setText("");
+        jPasswordFieldPassword.setText("");
+
         Session.setCurrentUser(user);
 
         if (user.getMustChangePassword() == true) {
             UIUtil.showInfoMessage(this, "You are required to change your password before proceeding.", "Password Change Required");
-            loginPortal.showFirstLoginPassword();
+            loginPortal.showEnforcedPasswordReset();
             return;
         }
 
