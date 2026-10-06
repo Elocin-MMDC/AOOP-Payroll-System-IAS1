@@ -89,6 +89,41 @@ public class AuthenticationServiceTest {
         userDao.update(hrAdmin);
     }
 
+    @Test
+    public void testEnforcedPasswordChange_clearsFlagAndAudits() throws Exception {
+        UserAccount original = userDao.getById(employee.getUserID());
+        String originalHash = original.getPassword();
+        boolean originalMustChange = Boolean.TRUE.equals(original.getMustChangePassword());
+        String temporaryPassword = "first-login-" + System.nanoTime();
+        String temporaryHash = PasswordUtil.sha256Hash(temporaryPassword);
+        String newPassword = "changed-" + System.nanoTime();
+
+        try {
+            assertTrue(userDao.updatePasswordAndClearMustChange(employee.getUserID(), temporaryHash));
+            assertTrue(userDao.updateMustChangePasswordFlag(employee.getUserID(), true));
+
+            UserAccount loggedIn = service.login(employee.getUsername(), temporaryPassword);
+            assertTrue(Boolean.TRUE.equals(loggedIn.getMustChangePassword()));
+
+            service.completeEnforcedPasswordReset(employee.getUserID(), newPassword);
+
+            UserAccount updated = userDao.getById(employee.getUserID());
+            assertTrue(PasswordUtil.verify(newPassword, updated.getPassword()));
+            assertFalse(Boolean.TRUE.equals(updated.getMustChangePassword()));
+            assertFalse(Boolean.TRUE.equals(Session.getCurrentUser().getMustChangePassword()));
+            assertTrue(new AuditLogDAO().getAll().stream().anyMatch(log ->
+                    log.getUserID() == employee.getUserID()
+                && "FORCED_PASSWORD_RESET".equals(log.getAction())
+                && "password".equals(log.getAttributeModified())
+                && temporaryHash.equals(log.getOldValue())
+                && PasswordUtil.sha256Hash(newPassword).equals(log.getNewValue())));
+        } finally {
+            userDao.resetPassword(employee.getUserID(), originalHash);
+            userDao.updateMustChangePasswordFlag(employee.getUserID(), originalMustChange);
+            Session.clear();
+        }
+    }
+
     // Null username should trigger authentication exception
     @Test(expected = AuthenticationException.class)
     public void testLogin_nullUsernameThrows() throws Exception {

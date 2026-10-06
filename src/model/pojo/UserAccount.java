@@ -13,6 +13,7 @@ public class UserAccount {
     private LocalDateTime updatedAt;
     private LocalDateTime reactivatedAt;
     private LocalDateTime deactivatedAt;
+    private Boolean mustChangePassword;
 
     public UserAccount(int userID, int employeeID, String username, String password, int roleID, String accountStatus, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime reactivatedAt, LocalDateTime deactivatedAt) {
         this.userID = userID;
@@ -71,6 +72,10 @@ public class UserAccount {
         return deactivatedAt;
     }
 
+    public Boolean getMustChangePassword() {
+        return mustChangePassword;
+    }
+
     public void setUserID(int userID) {
         this.userID = userID;
     }
@@ -109,6 +114,10 @@ public class UserAccount {
 
     public void setDeactivatedAt(LocalDateTime deactivatedAt) {
         this.deactivatedAt = deactivatedAt;
+    }
+
+    public void setMustChangePassword(Boolean mustChangePassword) {
+        this.mustChangePassword = mustChangePassword;
     }
 
     @Override

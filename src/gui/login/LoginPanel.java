@@ -13,7 +13,7 @@ import util.Session;
 import util.UIUtil;
 
 public class LoginPanel extends javax.swing.JPanel {
-    
+
     private final LoginPortal loginPortal;
     private final AuthenticationService authService;
 
@@ -24,7 +24,8 @@ public class LoginPanel extends javax.swing.JPanel {
     }
 
     @SuppressWarnings("unchecked")
-    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    // <editor-fold defaultstate="collapsed" desc="Generated
+    // Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
         jPanelLoginBox = new javax.swing.JPanel();
@@ -109,14 +110,16 @@ public class LoginPanel extends javax.swing.JPanel {
         jLabelPleaseLoginInHere.setForeground(new java.awt.Color(12, 72, 92));
         jLabelPleaseLoginInHere.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         jLabelPleaseLoginInHere.setText("Please login here");
-        jPanelLoginBox.add(jLabelPleaseLoginInHere, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, 230, 160, 20));
+        jPanelLoginBox.add(jLabelPleaseLoginInHere,
+                new org.netbeans.lib.awtextra.AbsoluteConstraints(60, 230, 160, 20));
 
         jLabelPayrollManagementSystem.setBackground(new java.awt.Color(255, 255, 255));
         jLabelPayrollManagementSystem.setFont(new java.awt.Font("Segoe UI", 3, 18)); // NOI18N
         jLabelPayrollManagementSystem.setForeground(new java.awt.Color(12, 72, 92));
         jLabelPayrollManagementSystem.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         jLabelPayrollManagementSystem.setText("Payroll Management System");
-        jPanelLoginBox.add(jLabelPayrollManagementSystem, new org.netbeans.lib.awtextra.AbsoluteConstraints(120, 100, -1, 40));
+        jPanelLoginBox.add(jLabelPayrollManagementSystem,
+                new org.netbeans.lib.awtextra.AbsoluteConstraints(120, 100, -1, 40));
 
         jLabelMotorPH.setBackground(new java.awt.Color(255, 255, 255));
         jLabelMotorPH.setFont(new java.awt.Font("Segoe UI", 1, 36)); // NOI18N
@@ -132,15 +135,15 @@ public class LoginPanel extends javax.swing.JPanel {
         add(jPanelLoginBox, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 490, 570));
     }// </editor-fold>//GEN-END:initComponents
 
-    private void jPasswordFieldPasswordActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jPasswordFieldPasswordActionPerformed
+    private void jPasswordFieldPasswordActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jPasswordFieldPasswordActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jPasswordFieldPasswordActionPerformed
+    }// GEN-LAST:event_jPasswordFieldPasswordActionPerformed
 
-    private void jTextFieldUsernameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldUsernameActionPerformed
+    private void jTextFieldUsernameActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jTextFieldUsernameActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jTextFieldUsernameActionPerformed
+    }// GEN-LAST:event_jTextFieldUsernameActionPerformed
 
-    private void jButtonLoginActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonLoginActionPerformed
+    private void jButtonLoginActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jButtonLoginActionPerformed
         // TODO add your handling code here:
         String username = jTextFieldUsername.getText().trim();
         String password = new String(jPasswordFieldPassword.getPassword());
@@ -152,7 +155,7 @@ public class LoginPanel extends javax.swing.JPanel {
         }
 
         UserAccount user;
-        
+
         try {
             user = authService.login(username, password);
         } catch (Exception ex) {
@@ -161,6 +164,17 @@ public class LoginPanel extends javax.swing.JPanel {
         }
 
         Session.setCurrentUser(user);
+
+        if (user.getMustChangePassword() == true) {
+            UIUtil.showInfoMessage(this, "You are required to change your password before proceeding.", "Password Change Required");
+            loginPortal.showFirstLoginPassword();
+            return;
+        }
+
+        openRolePortal();
+    }// GEN-LAST:event_jButtonLoginActionPerformed
+
+    void openRolePortal() {
 
         SwingUtilities.getWindowAncestor(this).dispose();
 
@@ -183,13 +197,13 @@ public class LoginPanel extends javax.swing.JPanel {
             default:
                 UIUtil.showErrorMessage(this, "Unrecognized role: " + roleName, "Login Error");
         }
-    }//GEN-LAST:event_jButtonLoginActionPerformed
+    }
 
-    private void jLabelForgotPasswordMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabelForgotPasswordMouseClicked
+    private void jLabelForgotPasswordMouseClicked(java.awt.event.MouseEvent evt) {// GEN-FIRST:event_jLabelForgotPasswordMouseClicked
         // TODO add your handling code here:
         CardLayout cardLayout = (CardLayout) loginPortal.getPanelParentCard().getLayout();
         cardLayout.show(loginPortal.getPanelParentCard(), "ForgotPassword");
-    }//GEN-LAST:event_jLabelForgotPasswordMouseClicked
+    }// GEN-LAST:event_jLabelForgotPasswordMouseClicked
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButtonLogin;

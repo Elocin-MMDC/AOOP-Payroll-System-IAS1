@@ -23,16 +23,17 @@ import model.pojo.Role;
 import util.Session;
 
 public class AuthenticationService {
-    
+
     private final UserAccountDAO userDao = new UserAccountDAO();
     private final RoleDAO roleDao = new RoleDAO();
     private final LoginLogDAO logDao = new LoginLogDAO();
     private final EmployeeDAO employeeDao = new EmployeeDAO();
-    
+
     private static final int MAX_ATTEMPTS = 3;
     private static final int LOCKOUT_DURATION_MINUTES = 30;
 
-    // Authenticates a user by verifying credentials and enforcing account lockout policy
+    // Authenticates a user by verifying credentials and enforcing account lockout
+    // policy
     public UserAccount login(String username, String password) throws AuthenticationException {
         if (username == null || password == null) {
             throw new AuthenticationException("Username and password must not be null.");
@@ -66,6 +67,15 @@ public class AuthenticationService {
     // Log out the current user
     public void logout() {
         Session.clear();
+    }
+
+    // Refresh the current user's data from the database
+    public void refreshCurrentUser() {
+        UserAccount currentUser = Session.getCurrentUser();
+        if (currentUser != null) {
+            UserAccount refreshedUser = userDao.getById(currentUser.getUserID());
+            Session.setCurrentUser(refreshedUser);
+        }
     }
 
     // Change the password for the given user after verifying current password
@@ -104,7 +114,48 @@ public class AuthenticationService {
         log.setNewValue(PasswordUtil.sha256Hash(user.getPassword()));
         auditDao.insert(log);
     }
-    
+
+    // Change the password and clear the mustChangePassword flag
+    public void completeEnforcedPasswordReset(int userId, String newPassword) throws AuthenticationException {
+        // Fetch user
+        UserAccount user = userDao.getById(userId);
+        if (user == null) {
+            throw new AuthenticationException("User not found.");
+        }
+
+        // Verify new password is not the same as the current password
+        if (PasswordUtil.verify(newPassword, user.getPassword())) {
+            throw new AuthenticationException("New password cannot be the same as current password");
+        }
+
+        // Validate password strength here... (e.g., length, complexity)
+
+        // Capture hashes
+        String oldHashedPassword = user.getPassword();
+        String newHashedPassword = PasswordUtil.sha256Hash(newPassword);
+
+        // Apply new password and clear mustChangePassword flag
+        boolean isEnforcedPasswordResetSuccessful = userDao.updatePasswordAndClearMustChange(userId, newHashedPassword);
+        if (!isEnforcedPasswordResetSuccessful) {
+            throw new AuthenticationException("Failed to update password.");
+        }
+
+        // Refresh session to reflect changes
+        refreshCurrentUser(); 
+
+        // Audit log the change
+        AuditLogDAO auditDao = new AuditLogDAO();
+        AuditLog log = new AuditLog();
+        log.setUserID(user.getUserID());
+        log.setCreatedAt(LocalDateTime.now());
+        log.setAction("FORCED_PASSWORD_RESET");
+        log.setEntityModified("UserAccount");
+        log.setEntityID(user.getUserID());
+        log.setAttributeModified("password");
+        log.setOldValue(oldHashedPassword);
+        log.setNewValue(newHashedPassword);
+        auditDao.insert(log);
+    }
 
     public boolean verifyIdentity(int employeeID, String birthdayStr, String sssNumber) {
         // Basic null / format checks
@@ -128,39 +179,40 @@ public class AuthenticationService {
         }
     }
 
-    // Verify identity then set new password
-    public void resetPassword(String username, String birthday, String sssNumber, String newPassword) throws AuthenticationException {
-        // Fetch and verify
-        UserAccount user = userDao.getByUsername(username);
-        if (user == null) {
-            throw new AuthenticationException("User not found.");
-        }
-        if (!verifyIdentity(user.getEmployeeID(), birthday, sssNumber)) {
-            throw new AuthenticationException("Verification failed.");
-        }
+    // // Verify identity then set new password
+    public void resetPassword(String username, String birthday, String sssNumber,
+    String newPassword) throws AuthenticationException {
+    // Fetch and verify
+    UserAccount user = userDao.getByUsername(username);
+    if (user == null) {
+    throw new AuthenticationException("User not found.");
+    }
+    if (!verifyIdentity(user.getEmployeeID(), birthday, sssNumber)) {
+    throw new AuthenticationException("Verification failed.");
+    }
 
-        // Capture old value
-        String oldHash = user.getPassword();
+    // Capture old value
+    String oldHash = user.getPassword();
 
-        // Apply change
-        user.setPassword((newPassword));
-        boolean ok = userDao.update(user);
-        if (!ok) {
-            throw new AuthenticationException("Failed to update password.");
-        }
+    // Apply change
+    user.setPassword((newPassword));
+    boolean ok = userDao.update(user);
+    if (!ok) {
+    throw new AuthenticationException("Failed to update password.");
+    }
 
-        // Audit
-        AuditLogDAO auditDao = new AuditLogDAO();
-        AuditLog log = new AuditLog();
-        log.setUserID(user.getUserID());
-        log.setCreatedAt(LocalDateTime.now());
-        log.setAction("UPDATE");
-        log.setEntityModified("UserAccount");
-        log.setEntityID(user.getUserID());
-        log.setAttributeModified("password");
-        log.setOldValue(oldHash);
-        log.setNewValue(PasswordUtil.sha256Hash(user.getPassword()));
-        auditDao.insert(log);
+    // Audit
+    AuditLogDAO auditDao = new AuditLogDAO();
+    AuditLog log = new AuditLog();
+    log.setUserID(user.getUserID());
+    log.setCreatedAt(LocalDateTime.now());
+    log.setAction("UPDATE");
+    log.setEntityModified("UserAccount");
+    log.setEntityID(user.getUserID());
+    log.setAttributeModified("password");
+    log.setOldValue(oldHash);
+    log.setNewValue(PasswordUtil.sha256Hash(user.getPassword()));
+    auditDao.insert(log);
     }
 
     // Check if the given userID is currently locked out based on the last login log
@@ -198,7 +250,8 @@ public class AuthenticationService {
     }
 
     // Record a login attempt in the log
-    private void recordLoginAttempt(int userID, String status, int attemptCount, boolean locked, LocalDateTime lockEndTime) {
+    private void recordLoginAttempt(int userID, String status, int attemptCount, boolean locked,
+            LocalDateTime lockEndTime) {
         LoginLog log = new LoginLog();
         log.setUserID(userID);
         log.setCreatedAt(LocalDateTime.now());
@@ -208,7 +261,7 @@ public class AuthenticationService {
         log.setLockEndTime(lockEndTime);
         logDao.insert(log);
     }
-    
+
     // Get current user's role
     public Role getCurrentRole() {
         var user = Session.getCurrentUser();
@@ -250,7 +303,7 @@ public class AuthenticationService {
                 null;
         };
     }
-    
+
     // Returns the full name of the currently logged-in user
     public String getCurrentUserFullName() {
         int empId = Session.getCurrentUser().getEmployeeID();
@@ -260,19 +313,19 @@ public class AuthenticationService {
         }
         return efd.getFirstName() + " " + efd.getLastName();
     }
-    
+
     public class AuthenticationException extends Exception {
 
         public AuthenticationException(String message) {
             super(message);
         }
     }
-   
+
 }
 
-//public class AuthenticationException extends Exception {
+// public class AuthenticationException extends Exception {
 //
-//    public AuthenticationException(String message) {
-//        super(message);
-//    }
-//}
+// public AuthenticationException(String message) {
+// super(message);
+// }
+// }

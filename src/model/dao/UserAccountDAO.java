@@ -98,6 +98,7 @@ public class UserAccountDAO {
         u.setReactivatedAt(re != null ? re.toLocalDateTime() : null);
         Timestamp de = rs.getTimestamp("deactivatedAt");
         u.setDeactivatedAt(de != null ? de.toLocalDateTime() : null);
+        u.setMustChangePassword(rs.getBoolean("mustChangePassword"));
         return u;
     }
     
@@ -138,6 +139,35 @@ public class UserAccountDAO {
              PreparedStatement ps = con.prepareStatement(sql)) {
             
             ps.setString(1, newStatus);
+            ps.setInt(2, userID);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    // Update user's mustChangePassword flag
+    public boolean updateMustChangePasswordFlag(int userID, boolean mustChangePassword) {
+        String sql = "UPDATE UserAccount SET mustChangePassword = ?, updatedAt = NOW() WHERE userID = ?";
+        try (Connection con = DBConnection.getConnection(); 
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            
+            ps.setBoolean(1, mustChangePassword);
+            ps.setInt(2, userID);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean updatePasswordAndClearMustChange(int userID, String newHashedPassword) {
+        String sql = "UPDATE UserAccount SET password = ?, mustChangePassword = FALSE, updatedAt = NOW() WHERE userID = ?";
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, newHashedPassword);
             ps.setInt(2, userID);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {

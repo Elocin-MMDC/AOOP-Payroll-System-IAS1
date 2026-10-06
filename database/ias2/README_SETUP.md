@@ -121,3 +121,19 @@ Run the application normally and verify that authorized Employee/HR screens show
 - `src/util/PiiDataMigrationTool.java`
 - `database/ias2/01_pii_schema_prepare.sql`
 - `database/ias2/03_pii_schema_finalize.sql`
+
+-----------------------------------------------------
+
+# Authenticaton Hardening Team Setup
+This guide sets up the Authentication Hardening for a local development copy of MotorPH.
+
+Important Prerequisite: PII Encryption at Rest Team Setup must be done first
+
+## Phase I: First-Login Reset Enforcement
+
+## 1. Add a Must Change Password Flag
+run
+```text
+database/ias2/04_auth_schema_must-change-password.sql
+```
+in MySQL
