@@ -130,8 +130,6 @@ public class AuthenticationService {
 
         // Validate password strength here... (e.g., length, complexity)
 
-        // Capture hashes
-        String oldHashedPassword = user.getPassword();
         String newHashedPassword = PasswordUtil.sha256Hash(newPassword);
 
         // Apply new password and clear mustChangePassword flag
@@ -148,12 +146,12 @@ public class AuthenticationService {
         AuditLog log = new AuditLog();
         log.setUserID(user.getUserID());
         log.setCreatedAt(LocalDateTime.now());
-        log.setAction("FORCED_PASSWORD_RESET");
+        log.setAction("UPDATE");
         log.setEntityModified("UserAccount");
         log.setEntityID(user.getUserID());
-        log.setAttributeModified("password");
-        log.setOldValue(oldHashedPassword);
-        log.setNewValue(newHashedPassword);
+        log.setAttributeModified("mustChangePassword");
+        log.setOldValue("true");
+        log.setNewValue("false");
         auditDao.insert(log);
     }
 

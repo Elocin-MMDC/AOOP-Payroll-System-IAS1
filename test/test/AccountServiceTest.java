@@ -160,25 +160,38 @@ public class AccountServiceTest {
     @Test
     public void testResetPassword_success() throws Exception {
         int userId = employee.getUserID();
-        String oldHash = employee.getPassword();
-        String expectedHash = PasswordUtil.sha256Hash("temppassword");
+        UserAccount original = userDao.getById(userId);
+        String oldHash = original.getPassword();
+        boolean oldMustChange = Boolean.TRUE.equals(original.getMustChangePassword());
+        String[] temporaryPassword = new String[1];
 
-        runAs(itAdmin, () -> {
-            try {
-                boolean ok = service.resetPassword(userId);
-                System.out.println("   resetPassword() returned=" + ok);
-                assertTrue(ok);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
+        try {
+            runAs(itAdmin, () -> {
+                try {
+                    temporaryPassword[0] = service.resetPassword(userId);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
 
-        UserAccount after = userDao.getById(userId);
-        assertEquals(expectedHash, after.getPassword());
-        System.out.println("   ✔ Password reset hash stored");
+            assertNotNull(temporaryPassword[0]);
+            assertFalse(temporaryPassword[0].isEmpty());
 
-        // Restore original password
-        userDao.resetPassword(userId, oldHash);
+            UserAccount after = userDao.getById(userId);
+            assertTrue(PasswordUtil.verify(temporaryPassword[0], after.getPassword()));
+            assertTrue(Boolean.TRUE.equals(after.getMustChangePassword()));
+            assertTrue(new AuditLogDAO().getAll().stream().anyMatch(log ->
+                    log.getUserID() == itAdmin.getUserID()
+                && "UPDATE".equals(log.getAction())
+                && "UserAccount".equals(log.getEntityModified())
+                && log.getEntityID() == userId
+                && "mustChangePassword".equals(log.getAttributeModified())
+                && "false".equals(log.getOldValue())
+                && "true".equals(log.getNewValue())));
+        } finally {
+            userDao.resetPassword(userId, oldHash);
+            userDao.updateMustChangePasswordFlag(userId, oldMustChange);
+        }
     }
 
     // IT Admin can update username, role, and account status

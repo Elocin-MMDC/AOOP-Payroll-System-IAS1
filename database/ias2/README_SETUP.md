@@ -166,7 +166,6 @@ Expected result: `BUILD SUCCESSFUL`.
 - Temporary passwords use Java `SecureRandom` to generate 12 random bytes, encoded as URL-safe Base64 without padding. They are shown to the IT Admin once for delivery. Password resets for this after login is now enforced.
 - At login, `mustChangePassword` determines whether the user must choose a new password before entering the role portal. A successful change clears the flag and returns the user to the login screen.
 - The old dashboard check that hashes and compares the literal `temppassword` is currently commented out. Required changes are enforced by the login flag instead.
-- Password resets are recorded in the audit log as `FORCED_PASSWORD_RESET`.
 
 ## Key files
 

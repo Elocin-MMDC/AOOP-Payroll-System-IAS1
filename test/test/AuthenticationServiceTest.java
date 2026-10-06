@@ -90,13 +90,18 @@ public class AuthenticationServiceTest {
     }
 
     @Test
-    public void testEnforcedPasswordChange_clearsFlagAndAudits() throws Exception {
+    public void testCompleteEnforcedPasswordReset_success() throws Exception {
         UserAccount original = userDao.getById(employee.getUserID());
         String originalHash = original.getPassword();
         boolean originalMustChange = Boolean.TRUE.equals(original.getMustChangePassword());
         String temporaryPassword = "first-login-" + System.nanoTime();
         String temporaryHash = PasswordUtil.sha256Hash(temporaryPassword);
         String newPassword = "changed-" + System.nanoTime();
+        AuditLogDAO auditDao = new AuditLogDAO();
+        int lastAuditIdBeforeReset = auditDao.getAll().stream()
+                .mapToInt(AuditLog::getAuditID)
+                .max()
+                .orElse(0);
 
         try {
             assertTrue(userDao.updatePasswordAndClearMustChange(employee.getUserID(), temporaryHash));
@@ -111,12 +116,15 @@ public class AuthenticationServiceTest {
             assertTrue(PasswordUtil.verify(newPassword, updated.getPassword()));
             assertFalse(Boolean.TRUE.equals(updated.getMustChangePassword()));
             assertFalse(Boolean.TRUE.equals(Session.getCurrentUser().getMustChangePassword()));
-            assertTrue(new AuditLogDAO().getAll().stream().anyMatch(log ->
-                    log.getUserID() == employee.getUserID()
-                && "FORCED_PASSWORD_RESET".equals(log.getAction())
-                && "password".equals(log.getAttributeModified())
-                && temporaryHash.equals(log.getOldValue())
-                && PasswordUtil.sha256Hash(newPassword).equals(log.getNewValue())));
+            assertTrue(auditDao.getAll().stream().anyMatch(log ->
+                    log.getAuditID() > lastAuditIdBeforeReset
+                && log.getUserID() == employee.getUserID()
+                && "UPDATE".equals(log.getAction())
+                && "UserAccount".equals(log.getEntityModified())
+                && log.getEntityID() == employee.getUserID()
+                && "mustChangePassword".equals(log.getAttributeModified())
+                && "true".equals(log.getOldValue())
+                && "false".equals(log.getNewValue())));
         } finally {
             userDao.resetPassword(employee.getUserID(), originalHash);
             userDao.updateMustChangePasswordFlag(employee.getUserID(), originalMustChange);

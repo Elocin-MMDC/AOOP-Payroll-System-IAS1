@@ -76,6 +76,8 @@ public class AccountService {
         newTemporaryPassword = generateTempPassword();
         String hashedTemporaryPassword = PasswordUtil.sha256Hash(newTemporaryPassword);
 
+        boolean oldMustChangePassword = account.getMustChangePassword();
+
         // Update the user's password and set mustChangePassword to true
         boolean isSuccessfullyUpdated = userDao.updatePasswordAndEnforceMustChange(userID, hashedTemporaryPassword);
         if (!isSuccessfullyUpdated) {
@@ -86,11 +88,11 @@ public class AccountService {
         AuditLog log = new AuditLog();
         log.setUserID(Session.getCurrentUser().getUserID());
         log.setCreatedAt(LocalDateTime.now());
-        log.setAction("FORCED_PASSWORD_RESET");
+        log.setAction("UPDATE");
         log.setEntityModified("UserAccount");
         log.setEntityID(userID);
         log.setAttributeModified("mustChangePassword");
-        log.setOldValue("false");
+        log.setOldValue(String.valueOf(oldMustChangePassword));
         log.setNewValue("true");
         auditDao.insert(log);
 
