@@ -14,12 +14,16 @@ public class UserAccount {
     private LocalDateTime reactivatedAt;
     private LocalDateTime deactivatedAt;
     private Boolean mustChangePassword;
+    private String passwordSalt;
 
-    public UserAccount(int userID, int employeeID, String username, String password, int roleID, String accountStatus, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime reactivatedAt, LocalDateTime deactivatedAt) {
+    public UserAccount(int userID, int employeeID, String username, String password, String passwordSalt, int roleID, String accountStatus,
+            LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime reactivatedAt,
+            LocalDateTime deactivatedAt) {
         this.userID = userID;
         this.employeeID = employeeID;
         this.username = username;
         this.password = password;
+        this.passwordSalt = passwordSalt;
         this.roleID = roleID;
         this.accountStatus = accountStatus;
         this.createdAt = createdAt;
@@ -27,9 +31,9 @@ public class UserAccount {
         this.reactivatedAt = reactivatedAt;
         this.deactivatedAt = deactivatedAt;
     }
-    
+
     public UserAccount() {
-        
+
     }
 
     public int getUserID() {
@@ -76,6 +80,10 @@ public class UserAccount {
         return mustChangePassword;
     }
 
+    public String getPasswordSalt() {
+        return passwordSalt;
+    }
+
     public void setUserID(int userID) {
         this.userID = userID;
     }
@@ -120,9 +128,13 @@ public class UserAccount {
         this.mustChangePassword = mustChangePassword;
     }
 
+    public void setPasswordSalt(String passwordSalt) {
+        this.passwordSalt = passwordSalt;
+    }
+
     @Override
     public String toString() {
         return "UserAccount{" + "userID=" + userID + '}';
     }
-    
+
 }

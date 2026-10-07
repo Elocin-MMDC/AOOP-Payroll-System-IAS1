@@ -2,6 +2,7 @@ package model.dao;
 
 import db.DBConnection;
 import model.pojo.UserAccount;
+import util.PasswordCryptoUtil;
 import util.PasswordUtil;
 import java.sql.*;
 
@@ -43,15 +44,20 @@ public class UserAccountDAO {
 
     // Insert new user account for the new employee
     public int insert(UserAccount user) {
-        String sql = "INSERT INTO UserAccount (employeeID, username, password, roleID, accountStatus) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO UserAccount (employeeID, username, password, passwordSalt, roleID, accountStatus) VALUES (?, ?, ?, ?, ?)";
         try (Connection con = DBConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            
+
+            PasswordUtil.applyHashedPassword(user, user.getPassword());
+            String hashedPassword = user.getPassword();
+            String passwordSalt = user.getPasswordSalt();
+
             ps.setInt(1, user.getEmployeeID());
             ps.setString(2, user.getUsername());
-            ps.setString(3, PasswordUtil.sha256Hash(user.getPassword()));
-            ps.setInt(4, user.getRoleID());
-            ps.setString(5, user.getAccountStatus());
+            ps.setString(3, hashedPassword);
+            ps.setString(4, passwordSalt);
+            ps.setInt(5, user.getRoleID());
+            ps.setString(6, user.getAccountStatus());
             int rows = ps.executeUpdate();
             if (rows > 0) {
                 ResultSet keys = ps.getGeneratedKeys();
@@ -67,15 +73,19 @@ public class UserAccountDAO {
 
     // Update user account
     public boolean update(UserAccount user) {
-        String sql = "UPDATE UserAccount SET username = ?, password = ?, roleID = ?, accountStatus = ?, updatedAt = NOW() WHERE userID = ?";
+        String sql = "UPDATE UserAccount SET username = ?, password = ?, passwordSalt = ?, roleID = ?, accountStatus = ?, updatedAt = NOW() WHERE userID = ?";
         try (Connection con = DBConnection.getConnection(); 
              PreparedStatement ps = con.prepareStatement(sql)) {
+
+            String hashedPassword = user.getPassword();
+            String passwordSalt = user.getPasswordSalt();
             
             ps.setString(1, user.getUsername());
-            ps.setString(2, PasswordUtil.sha256Hash(user.getPassword()));
-            ps.setInt(3, user.getRoleID());
-            ps.setString(4, user.getAccountStatus());
-            ps.setInt(5, user.getUserID());
+            ps.setString(2, hashedPassword);
+            ps.setString(3, passwordSalt);
+            ps.setInt(4, user.getRoleID());
+            ps.setString(5, user.getAccountStatus());
+            ps.setInt(6, user.getUserID());
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -99,6 +109,7 @@ public class UserAccountDAO {
         Timestamp de = rs.getTimestamp("deactivatedAt");
         u.setDeactivatedAt(de != null ? de.toLocalDateTime() : null);
         u.setMustChangePassword(rs.getBoolean("mustChangePassword"));
+        u.setPasswordSalt(rs.getString("passwordSalt"));
         return u;
     }
     
@@ -163,13 +174,14 @@ public class UserAccountDAO {
     }
 
     // Update user's password and set mustChangePassword flag to false
-    public boolean updatePasswordAndClearMustChange(int userID, String newHashedPassword) {
-        String sql = "UPDATE UserAccount SET password = ?, mustChangePassword = FALSE, updatedAt = NOW() WHERE userID = ?";
+    public boolean updatePasswordAndClearMustChange(int userID, String newHashedPassword, String passwordSalt) {
+        String sql = "UPDATE UserAccount SET password = ?, passwordSalt = ?, mustChangePassword = FALSE, updatedAt = NOW() WHERE userID = ?";
         try (Connection con = DBConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setString(1, newHashedPassword);
-            ps.setInt(2, userID);
+            ps.setString(2, passwordSalt);
+            ps.setInt(3, userID);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -178,13 +190,14 @@ public class UserAccountDAO {
     }
 
     // Update user's password and set mustChangePassword flag to true
-    public boolean updatePasswordAndEnforceMustChange(int userID, String newHashedPassword) {
-        String sql = "UPDATE UserAccount SET password = ?, mustChangePassword = TRUE, updatedAt = NOW() WHERE userID = ?";
+    public boolean updatePasswordAndEnforceMustChange(int userID, String newHashedPassword, String passwordSalt) {
+        String sql = "UPDATE UserAccount SET password = ?, passwordSalt = ?, mustChangePassword = TRUE, updatedAt = NOW() WHERE userID = ?";
         try (Connection con = DBConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setString(1, newHashedPassword);
-            ps.setInt(2, userID);
+            ps.setString(2, passwordSalt);
+            ps.setInt(3, userID);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -193,13 +206,14 @@ public class UserAccountDAO {
     }
 
     // Reset user's password
-    public boolean resetPassword(int userID, String newHashedPassword) {
-        String sql = "UPDATE UserAccount SET password = ?, updatedAt = NOW() WHERE userID = ?";
+    public boolean resetPassword(int userID, String newHashedPassword, String passwordSalt) {
+        String sql = "UPDATE UserAccount SET password = ?, passwordSalt = ?, updatedAt = NOW() WHERE userID = ?";
         try (Connection con = DBConnection.getConnection(); 
              PreparedStatement ps = con.prepareStatement(sql)) {
             
             ps.setString(1, newHashedPassword);
-            ps.setInt(2, userID);
+            ps.setString(2, passwordSalt);
+            ps.setInt(3, userID);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
