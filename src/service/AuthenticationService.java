@@ -41,7 +41,7 @@ public class AuthenticationService {
 
         UserAccount user = userDao.getByUsername(username);
         if (user == null) {
-            throw new AuthenticationException("Invalid username");
+            throw new AuthenticationException("Invalid username or password.");
         }
 
         // Check for existing lockout
@@ -55,7 +55,7 @@ public class AuthenticationService {
             boolean locked = failures >= MAX_ATTEMPTS;
             LocalDateTime lockEnd = locked ? LocalDateTime.now().plusMinutes(LOCKOUT_DURATION_MINUTES) : null;
             recordLoginAttempt(user.getUserID(), "FAILED", failures, locked, lockEnd);
-            throw new AuthenticationException("Invalid password. userPassword: " + password + ", storedHash: " + user.getPassword() + ", storedSalt: " + user.getPasswordSalt());
+            throw new AuthenticationException("Invalid username or password.");
         }
 
         // Successful login
@@ -89,6 +89,20 @@ public class AuthenticationService {
         // Verify current password
         if (!PasswordUtil.verifyUserPassword(currentPassword, user)) {
             throw new AuthenticationException("Current password is incorrect.");
+        }
+
+        // Check if the new password is the same as the current password
+        if (PasswordUtil.verifyUserPassword(newPassword, user)) {
+            throw new AuthenticationException("New password cannot be the same as current password.");
+        }
+
+        // Validate password policy (length, breach check)
+        if (!PasswordUtil.isPasswordLengthOkay(newPassword)) {
+            throw new AuthenticationException("New password must be at least 8 characters long.");
+        }
+        if (PasswordUtil.isPasswordCompromised(newPassword)) {
+            throw new AuthenticationException(
+                    "New password has been compromised in a data breach. Please choose a different password.");
         }
 
         // Hash and apply new password
@@ -125,7 +139,14 @@ public class AuthenticationService {
             throw new AuthenticationException("New password cannot be the same as current password");
         }
 
-        // Validate password strength here... (e.g., length, complexity)
+        // Validate password policy (length, breach check)
+        if (!PasswordUtil.isPasswordLengthOkay(newPassword)) {
+            throw new AuthenticationException("New password must be at least 8 characters long.");
+        }
+        if (PasswordUtil.isPasswordCompromised(newPassword)) {
+            throw new AuthenticationException(
+                    "New password has been compromised in a data breach. Please choose a different password.");
+        }
 
         PasswordUtil.applyHashedPassword(user, newPassword);
 
@@ -177,35 +198,44 @@ public class AuthenticationService {
 
     // Verify identity then set new password
     public void resetPassword(String username, String birthday, String sssNumber,
-    String newPassword) throws AuthenticationException {
-    // Fetch and verify
-    UserAccount user = userDao.getByUsername(username);
-    if (user == null) {
-    throw new AuthenticationException("User not found.");
-    }
-    if (!verifyIdentity(user.getEmployeeID(), birthday, sssNumber)) {
-    throw new AuthenticationException("Verification failed.");
-    }
+            String newPassword) throws AuthenticationException {
+        // Fetch and verify
+        UserAccount user = userDao.getByUsername(username);
+        if (user == null) {
+            throw new AuthenticationException("User not found.");
+        }
+        if (!verifyIdentity(user.getEmployeeID(), birthday, sssNumber)) {
+            throw new AuthenticationException("Verification failed.");
+        }
 
-    // Apply change
-    PasswordUtil.applyHashedPassword(user, newPassword);
-    boolean ok = userDao.update(user);
-    if (!ok) {
-    throw new AuthenticationException("Failed to update password.");
-    }
+        // Validate password policy (length, breach check)
+        if (!PasswordUtil.isPasswordLengthOkay(newPassword)) {
+            throw new AuthenticationException("New password must be at least 8 characters long.");
+        }
+        if (PasswordUtil.isPasswordCompromised(newPassword)) {
+            throw new AuthenticationException(
+                    "New password has been compromised in a data breach. Please choose a different password.");
+        }
 
-    // Audit
-    AuditLogDAO auditDao = new AuditLogDAO();
-    AuditLog log = new AuditLog();
-    log.setUserID(user.getUserID());
-    log.setCreatedAt(LocalDateTime.now());
-    log.setAction("UPDATE");
-    log.setEntityModified("UserAccount");
-    log.setEntityID(user.getUserID());
-    log.setAttributeModified("password");
-    log.setOldValue("[REDACTED]");
-    log.setNewValue("[REDACTED]");
-    auditDao.insert(log);
+        // Apply change
+        PasswordUtil.applyHashedPassword(user, newPassword);
+        boolean ok = userDao.update(user);
+        if (!ok) {
+            throw new AuthenticationException("Failed to update password.");
+        }
+
+        // Audit
+        AuditLogDAO auditDao = new AuditLogDAO();
+        AuditLog log = new AuditLog();
+        log.setUserID(user.getUserID());
+        log.setCreatedAt(LocalDateTime.now());
+        log.setAction("UPDATE");
+        log.setEntityModified("UserAccount");
+        log.setEntityID(user.getUserID());
+        log.setAttributeModified("password");
+        log.setOldValue("[REDACTED]");
+        log.setNewValue("[REDACTED]");
+        auditDao.insert(log);
     }
 
     // Check if the given userID is currently locked out based on the last login log

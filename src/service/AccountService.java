@@ -1,11 +1,8 @@
 package service;
 
-import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
-import java.util.Random;
 
 import model.dao.AuditLogDAO;
 import model.dao.EmployeeDAO;

@@ -4,7 +4,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Base64;
-
+import util.PasswordBreachChecker;
 import model.pojo.UserAccount;
 import util.PasswordCryptoUtil.HashResult;
 
@@ -35,6 +35,18 @@ public class PasswordUtil {
         byte[] randomBytes = new byte[12];
         secureRandom.nextBytes(randomBytes);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
+    }
+
+    //Check if at least 8 characters long
+    public static boolean isPasswordLengthOkay(String plainPassword){
+        if (plainPassword.length() < 8) {
+            return false;
+        }
+        return true;
+    }
+
+    public static boolean isPasswordCompromised(String plainPassword) {
+        return PasswordBreachChecker.isPasswordCompromised(plainPassword);
     }
 
     // public static HashResult hashPassword(String plainPassword) {
