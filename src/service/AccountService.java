@@ -1,8 +1,12 @@
 package service;
 
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
+import java.util.Random;
+
 import model.dao.AuditLogDAO;
 import model.dao.EmployeeDAO;
 import model.dao.EmployeeViewDAO;
@@ -54,33 +58,42 @@ public class AccountService {
         return userDao.getById(userId);
     }
     
-    public boolean resetPassword(int userID) throws ValidationException {
+    // Reset the user's password and change mustChangePassword flag to true
+    // This method is intended for IT Admins to enforce a password reset for a user account
+    // Returns the new temporary password for display to the IT Admin
+    public String resetPassword(int userID) throws ValidationException {
         AccessControlUtil.requireRole("IT Admin");
-        
-        UserAccount account = userDao.getById(userID);
 
+        String newTemporaryPassword = null;
+        
+        // Fetch the user account
+        UserAccount account = userDao.getById(userID);
         if (account == null) {
             throw new ValidationException("User account not found.");
         }
 
-        String oldPassword = account.getPassword();
-        String newPassword = "temppassword";
-        String hashedPassword = PasswordUtil.sha256Hash(newPassword);
+        // Generate a new temporary password
+        newTemporaryPassword = generateTempPassword();
+        String hashedTemporaryPassword = PasswordUtil.sha256Hash(newTemporaryPassword);
 
-        boolean updated = userDao.resetPassword(userID, hashedPassword);
-        if (!updated) {
-            throw new ValidationException("Failed to reset password.");
+        boolean oldMustChangePassword = account.getMustChangePassword();
+
+        // Update the user's password and set mustChangePassword to true
+        boolean isSuccessfullyUpdated = userDao.updatePasswordAndEnforceMustChange(userID, hashedTemporaryPassword);
+        if (!isSuccessfullyUpdated) {
+            throw new ValidationException("Failed to enforce password reset. Please try again.");
         }
 
+        // Log audit entry for the password reset enforcement
         AuditLog log = new AuditLog();
         log.setUserID(Session.getCurrentUser().getUserID());
         log.setCreatedAt(LocalDateTime.now());
         log.setAction("UPDATE");
         log.setEntityModified("UserAccount");
         log.setEntityID(userID);
-        log.setAttributeModified("password");
-        log.setOldValue(oldPassword);
-        log.setNewValue(hashedPassword);
+        log.setAttributeModified("mustChangePassword");
+        log.setOldValue(String.valueOf(oldMustChangePassword));
+        log.setNewValue("true");
         auditDao.insert(log);
 
         // Clear login lock state cleanly
@@ -97,7 +110,9 @@ public class AccountService {
         resetLockLog.setOldValue("Locked");
         resetLockLog.setNewValue("Unlocked");
         auditDao.insert(resetLockLog);
-        return true;
+
+        // Return the new temporary password
+        return newTemporaryPassword;
     }
 
     public boolean updateAccount(int userID, String newUsername, String newRoleName, String newStatus) throws ValidationException {
@@ -168,6 +183,13 @@ public class AccountService {
         }
 
         return updated;
+    }
+
+    private static String generateTempPassword() {
+        SecureRandom secureRandom = new SecureRandom();
+        byte[] randomBytes = new byte[12];
+        secureRandom.nextBytes(randomBytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
     }
 
     private AuditLog createAuditLog(String action, String entityModified, int entityID, String attribute, String oldVal, String newVal) {

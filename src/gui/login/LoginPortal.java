@@ -7,6 +7,7 @@ public class LoginPortal extends javax.swing.JFrame {
     
     private final LoginPanel loginPanel;
     private final ForgotPasswordPanel forgotPasswordPanel;
+    private final EnforcedPasswordResetPanel enforcedPasswordResetPanel;
 
     public LoginPortal() {
         UIUtil.setFlatLafUI();
@@ -14,6 +15,7 @@ public class LoginPortal extends javax.swing.JFrame {
         setLoginWindowIcon();
         loginPanel = new LoginPanel(this);
         forgotPasswordPanel = new ForgotPasswordPanel(this);
+        enforcedPasswordResetPanel = new EnforcedPasswordResetPanel(this);
         initComponents();
         addPanels();
         this.setLocationRelativeTo(null);
@@ -25,10 +27,23 @@ public class LoginPortal extends javax.swing.JFrame {
     public JPanel getPanelParentCard() {
         return this.jPanelParentCard;
     }
+
+    public void showEnforcedPasswordReset() {
+        ((java.awt.CardLayout) jPanelParentCard.getLayout()).show(jPanelParentCard, "EnforcedPasswordReset");
+    }
+
+    public void showLoginPanel() {
+        ((java.awt.CardLayout) jPanelParentCard.getLayout()).show(jPanelParentCard, "Login");
+    }
+
+    public void openUserPortal() {
+        loginPanel.openRolePortal();
+    }
     
     private void addPanels() {
         getPanelParentCard().add(loginPanel, "Login");
         getPanelParentCard().add(forgotPasswordPanel, "ForgotPassword");
+        getPanelParentCard().add(enforcedPasswordResetPanel, "EnforcedPasswordReset");
     }
     
     @SuppressWarnings("unchecked")

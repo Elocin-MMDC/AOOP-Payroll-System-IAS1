@@ -89,6 +89,49 @@ public class AuthenticationServiceTest {
         userDao.update(hrAdmin);
     }
 
+    @Test
+    public void testCompleteEnforcedPasswordReset_success() throws Exception {
+        UserAccount original = userDao.getById(employee.getUserID());
+        String originalHash = original.getPassword();
+        boolean originalMustChange = Boolean.TRUE.equals(original.getMustChangePassword());
+        String temporaryPassword = "first-login-" + System.nanoTime();
+        String temporaryHash = PasswordUtil.sha256Hash(temporaryPassword);
+        String newPassword = "changed-" + System.nanoTime();
+        AuditLogDAO auditDao = new AuditLogDAO();
+        int lastAuditIdBeforeReset = auditDao.getAll().stream()
+                .mapToInt(AuditLog::getAuditID)
+                .max()
+                .orElse(0);
+
+        try {
+            assertTrue(userDao.updatePasswordAndClearMustChange(employee.getUserID(), temporaryHash));
+            assertTrue(userDao.updateMustChangePasswordFlag(employee.getUserID(), true));
+
+            UserAccount loggedIn = service.login(employee.getUsername(), temporaryPassword);
+            assertTrue(Boolean.TRUE.equals(loggedIn.getMustChangePassword()));
+
+            service.completeEnforcedPasswordReset(employee.getUserID(), newPassword);
+
+            UserAccount updated = userDao.getById(employee.getUserID());
+            assertTrue(PasswordUtil.verify(newPassword, updated.getPassword()));
+            assertFalse(Boolean.TRUE.equals(updated.getMustChangePassword()));
+            assertFalse(Boolean.TRUE.equals(Session.getCurrentUser().getMustChangePassword()));
+            assertTrue(auditDao.getAll().stream().anyMatch(log ->
+                    log.getAuditID() > lastAuditIdBeforeReset
+                && log.getUserID() == employee.getUserID()
+                && "UPDATE".equals(log.getAction())
+                && "UserAccount".equals(log.getEntityModified())
+                && log.getEntityID() == employee.getUserID()
+                && "mustChangePassword".equals(log.getAttributeModified())
+                && "true".equals(log.getOldValue())
+                && "false".equals(log.getNewValue())));
+        } finally {
+            userDao.resetPassword(employee.getUserID(), originalHash);
+            userDao.updateMustChangePasswordFlag(employee.getUserID(), originalMustChange);
+            Session.clear();
+        }
+    }
+
     // Null username should trigger authentication exception
     @Test(expected = AuthenticationException.class)
     public void testLogin_nullUsernameThrows() throws Exception {
