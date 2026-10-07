@@ -145,7 +145,7 @@ This phase enables required password changes for new accounts and accounts whose
 Run this script once against `payrollsystem_db_ias2`:
 
 ```text
-database/ias2/04_auth_schema_must-change-password.sql
+database/ias2/04_auth_schema_mustChangePassword.sql
 ```
 
 **Expected Result:**
@@ -162,7 +162,7 @@ Existing rows keep the migration's initial value of FALSE/`0`; new account rows 
 - The old dashboard check that hashes and compares the literal `temppassword` is currently commented out. Required changes are enforced by the login flag instead.
 
 ### Key files
-- `database/ias2/04_auth_schema_must-change-password.sql`
+- `database/ias2/04_auth_schema_mustChangePassword.sql`
 - `src/gui/login/EnforcedPasswordResetPanel.java`
 
 ----------------------------------------------------------------------
@@ -178,13 +178,25 @@ This phase transitions credential storage from legacy single-round SHA-256 to sa
 Run this script once against `payrollsystem_db_ias2`:
 
 ```text
-database/ias2/05_auth_password_hash_prepare.sql
+database/ias2/05_auth_schema_passwordSalt.sql
 ```
 
 This script adds a nullable `passwordSalt VARCHAR(64)` column to the `useraccount` table to store user-specific random salts.
 It marks legacy SHA-256 credentials with `mustChangePassword = TRUE` to force a re-hash upon next login.
 
 **Expected result:** the `UserAccount` table gains a new nullable `passwordSalt` column
+
+### 1. Secure the audit log
+
+Run this script once against `payrollsystem_db_ias2`:
+
+```text
+database/ias2/06_auth_schema_password_audit-redact.sql
+```
+
+This script overwrites existing password hashes in audit logs with `[REDACTED]` for secure audits logging.
+
+**Expected result:** the password audits display `[REDACTED]` as the values; hashes never logged.
 
 ### Implementation details
 
@@ -200,7 +212,8 @@ It marks legacy SHA-256 credentials with `mustChangePassword = TRUE` to force a 
 
 
 ### Key files
-- `database/ias2/05_auth_password_hash_prepare.sql`
+- `database/ias2/05_auth_schema_passwordSalt.sql`
+- `database/ias2/06_auth_schema_password_audit-redact.sql`
 - `src/util/PasswordCryptoUtil.java`
 - `src/util/PasswordBreachChecker.java`
 - `src/util/PasswordUtil.java`
