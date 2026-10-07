@@ -50,7 +50,7 @@ public class AuthenticationService {
         }
 
         // Verify password
-        if (!PasswordUtil.verify(password, user.getPassword())) {
+        if (!PasswordUtil.verifyUserPassword(password, user)) {
             int failures = getConsecutiveFailures(user.getUserID()) + 1;
             boolean locked = failures >= MAX_ATTEMPTS;
             LocalDateTime lockEnd = locked ? LocalDateTime.now().plusMinutes(LOCKOUT_DURATION_MINUTES) : null;
@@ -87,21 +87,32 @@ public class AuthenticationService {
         }
 
         // Verify current password
-        if (!PasswordUtil.verify(currentPassword, user.getPassword())) {
+        if (!PasswordUtil.verifyUserPassword(currentPassword, user)) {
             throw new AuthenticationException("Current password is incorrect.");
         }
 
-        // Capture old hash
-        String oldHash = user.getPassword();
+        // Check if the new password is the same as the current password
+        if (PasswordUtil.verifyUserPassword(newPassword, user)) {
+            throw new AuthenticationException("New password cannot be the same as current password.");
+        }
 
-        // Apply new password
-        user.setPassword(newPassword);
+        // Validate password policy (length, breach check)
+        if (!PasswordUtil.isPasswordLengthOkay(newPassword)) {
+            throw new AuthenticationException("New password must be at least 8 characters long.");
+        }
+        if (PasswordUtil.isPasswordCompromised(newPassword)) {
+            throw new AuthenticationException(
+                    "New password has been compromised in a data breach. Please choose a different password.");
+        }
+
+        // Hash and apply new password
+        PasswordUtil.applyHashedPassword(user, newPassword);
         boolean ok = userDao.update(user);
         if (!ok) {
             throw new AuthenticationException("Failed to update password.");
         }
 
-        // Audit log the change
+        // Audit log the change. For security, the password hashes aren't logged
         AuditLogDAO auditDao = new AuditLogDAO();
         AuditLog log = new AuditLog();
         log.setUserID(user.getUserID());
@@ -110,8 +121,8 @@ public class AuthenticationService {
         log.setEntityModified("UserAccount");
         log.setEntityID(user.getUserID());
         log.setAttributeModified("password");
-        log.setOldValue(oldHash);
-        log.setNewValue(PasswordUtil.sha256Hash(user.getPassword()));
+        log.setOldValue("[REDACTED]");
+        log.setNewValue("[REDACTED]");
         auditDao.insert(log);
     }
 
@@ -124,22 +135,30 @@ public class AuthenticationService {
         }
 
         // Verify new password is not the same as the current password
-        if (PasswordUtil.verify(newPassword, user.getPassword())) {
+        if (PasswordUtil.verifyUserPassword(newPassword, user)) {
             throw new AuthenticationException("New password cannot be the same as current password");
         }
 
-        // Validate password strength here... (e.g., length, complexity)
+        // Validate password policy (length, breach check)
+        if (!PasswordUtil.isPasswordLengthOkay(newPassword)) {
+            throw new AuthenticationException("New password must be at least 8 characters long.");
+        }
+        if (PasswordUtil.isPasswordCompromised(newPassword)) {
+            throw new AuthenticationException(
+                    "New password has been compromised in a data breach. Please choose a different password.");
+        }
 
-        String newHashedPassword = PasswordUtil.sha256Hash(newPassword);
+        PasswordUtil.applyHashedPassword(user, newPassword);
 
         // Apply new password and clear mustChangePassword flag
-        boolean isEnforcedPasswordResetSuccessful = userDao.updatePasswordAndClearMustChange(userId, newHashedPassword);
+        boolean isEnforcedPasswordResetSuccessful = userDao.updatePasswordAndClearMustChange(userId, user.getPassword(),
+                user.getPasswordSalt());
         if (!isEnforcedPasswordResetSuccessful) {
             throw new AuthenticationException("Failed to update password.");
         }
 
         // Refresh session to reflect changes
-        refreshCurrentUser(); 
+        refreshCurrentUser();
 
         // Audit log the change
         AuditLogDAO auditDao = new AuditLogDAO();
@@ -177,40 +196,46 @@ public class AuthenticationService {
         }
     }
 
-    // // Verify identity then set new password
+    // Verify identity then set new password
     public void resetPassword(String username, String birthday, String sssNumber,
-    String newPassword) throws AuthenticationException {
-    // Fetch and verify
-    UserAccount user = userDao.getByUsername(username);
-    if (user == null) {
-    throw new AuthenticationException("User not found.");
-    }
-    if (!verifyIdentity(user.getEmployeeID(), birthday, sssNumber)) {
-    throw new AuthenticationException("Verification failed.");
-    }
+            String newPassword) throws AuthenticationException {
+        // Fetch and verify
+        UserAccount user = userDao.getByUsername(username);
+        if (user == null) {
+            throw new AuthenticationException("User not found.");
+        }
+        if (!verifyIdentity(user.getEmployeeID(), birthday, sssNumber)) {
+            throw new AuthenticationException("Verification failed.");
+        }
 
-    // Capture old value
-    String oldHash = user.getPassword();
+        // Validate password policy (length, breach check)
+        if (!PasswordUtil.isPasswordLengthOkay(newPassword)) {
+            throw new AuthenticationException("New password must be at least 8 characters long.");
+        }
+        if (PasswordUtil.isPasswordCompromised(newPassword)) {
+            throw new AuthenticationException(
+                    "New password has been compromised in a data breach. Please choose a different password.");
+        }
 
-    // Apply change
-    user.setPassword((newPassword));
-    boolean ok = userDao.update(user);
-    if (!ok) {
-    throw new AuthenticationException("Failed to update password.");
-    }
+        // Apply change
+        PasswordUtil.applyHashedPassword(user, newPassword);
+        boolean ok = userDao.update(user);
+        if (!ok) {
+            throw new AuthenticationException("Failed to update password.");
+        }
 
-    // Audit
-    AuditLogDAO auditDao = new AuditLogDAO();
-    AuditLog log = new AuditLog();
-    log.setUserID(user.getUserID());
-    log.setCreatedAt(LocalDateTime.now());
-    log.setAction("UPDATE");
-    log.setEntityModified("UserAccount");
-    log.setEntityID(user.getUserID());
-    log.setAttributeModified("password");
-    log.setOldValue(oldHash);
-    log.setNewValue(PasswordUtil.sha256Hash(user.getPassword()));
-    auditDao.insert(log);
+        // Audit
+        AuditLogDAO auditDao = new AuditLogDAO();
+        AuditLog log = new AuditLog();
+        log.setUserID(user.getUserID());
+        log.setCreatedAt(LocalDateTime.now());
+        log.setAction("UPDATE");
+        log.setEntityModified("UserAccount");
+        log.setEntityID(user.getUserID());
+        log.setAttributeModified("password");
+        log.setOldValue("[REDACTED]");
+        log.setNewValue("[REDACTED]");
+        auditDao.insert(log);
     }
 
     // Check if the given userID is currently locked out based on the last login log
@@ -223,7 +248,8 @@ public class AuthenticationService {
         return last.isIsLocked() && last.getLockEndTime().isAfter(LocalDateTime.now());
     }
 
-    // Returns the number of consecutive failed login attempts before the last successful login
+    // Returns the number of consecutive failed login attempts before the last
+    // successful login
     private int getConsecutiveFailures(int userID) {
         List<LoginLog> logs = logDao.getRecentAttempts(userID, MAX_ATTEMPTS);
         int count = 0;

@@ -1,8 +1,11 @@
-# MotorPH IAS2 - PII Encryption at Rest Team Setup
+# MotorPH IAS2 - Team Setup Guides
 
+-------------------------------------------------------------
+
+## A. PII Encryption at Rest Team Setup
 This guide sets up the PII Encryption at Rest control for a local development copy of MotorPH.
 
-## Important safety rules
+### Important safety rules
 
 - Do not commit `db.properties` or database passwords.
 - Do not commit AES/HMAC keys.
@@ -10,7 +13,7 @@ This guide sets up the PII Encryption at Rest control for a local development co
 - Do not run the migration tool more than once on the same database.
 - Do not run the application after Step 2 until Step 5 has completed successfully.
 
-## 1. Create a separate local IAS2 database
+### 1. Create a separate local IAS2 database
 
 The original `database/payrollsystem_db.sql` hardcodes `payrollsystem_db` in its `CREATE DATABASE` and `USE` statements. Do not import that file directly when creating the IAS2 copy.
 
@@ -21,7 +24,7 @@ The original `database/payrollsystem_db.sql` hardcodes `payrollsystem_db` in its
 5. Update your local `src/config/db.properties` so it points to `payrollsystem_db_ias2`. Do not commit that file.
 
 If the application uses a limited local database account such as `motorph_app`, give that account the same application privileges on `payrollsystem_db_ias2` that it has on the original local database. Do not grant unnecessary administrative privileges.
-## 2. Prepare the schema
+### 2. Prepare the schema
 
 Run:
 
@@ -31,7 +34,7 @@ database/ias2/01_pii_schema_prepare.sql
 
 This expands the four government-ID columns, adds four `BINARY(32)` HMAC lookup columns, and removes the old plaintext-format CHECK constraints.
 
-## 3. Generate your own local keys
+### 3. Generate your own local keys
 
 From PowerShell, use cryptographically random 32-byte keys for:
 
@@ -58,7 +61,7 @@ $rng.Dispose()
 
 Re-open the terminal after creating the user environment variables so new processes can read them.
 
-## 4. Compile
+### 4. Compile
 
 Run:
 
@@ -68,7 +71,7 @@ Run:
 
 Expected: `BUILD SUCCESSFUL`.
 
-## 5. Migrate the existing plaintext data
+### 5. Migrate the existing plaintext data
 
 Run the reusable migration tool:
 
@@ -86,7 +89,7 @@ PASS: Migration committed. Rows migrated=<count>
 
 If the tool reports `FAIL`, do not run it again until the database state has been checked.
 
-## 6. Finalize the schema
+### 6. Finalize the schema
 
 Only after the migration succeeds, run:
 
@@ -100,11 +103,11 @@ This:
 - moves uniqueness enforcement to the HMAC lookup columns
 - adds `v1:%` ciphertext guardrails
 
-## 7. Run the application
+### 7. Run the application
 
 Run the application normally and verify that authorized Employee/HR screens show readable government IDs while raw database values remain encrypted.
 
-## Implementation details
+### Implementation details
 
 - AES-256-GCM
 - 12-byte random nonce
@@ -115,7 +118,7 @@ Run the application normally and verify that authorized Employee/HR screens show
 - separate AES and HMAC keys
 - keys stored outside the repository
 
-## Files
+### Files
 
 - `src/util/PiiCryptoUtil.java`
 - `src/util/PiiDataMigrationTool.java`
@@ -124,57 +127,110 @@ Run the application normally and verify that authorized Employee/HR screens show
 
 -----------------------------------------------------
 
-# Authentication Hardening Team Setup
+## B. Authentication Hardening Team Setup
+This controls consists of four phases:
+- **Phase 1:** First-Login Reset Enforcement
+- **Phase 2:** Salted Adaptive Password Hashing & Policy Hardening
+- **Phase 3:** Email OTP Recovery Replacement
+- **Phase 4:** TOTP-Based MFA Enforcement
 
-# Phase 1: First-Login Reset Enforcement
+### Phase 1: First-Login Reset Enforcement
 
 This phase enables required password changes for new accounts and accounts whose passwords are reset by an IT Admin.
 
-Prerequisite: complete the PII Encryption at Rest setup above and use the local `payrollsystem_db_ias2` database. Apply this migration before testing the authentication flow.
+**Prerequisite:** complete the PII Encryption at Rest setup above and use the local `payrollsystem_db_ias2` database.
 
-## 1. Update the schema
+### 1. Update the schema
 
 Run this script once against `payrollsystem_db_ias2`:
 
 ```text
-database/ias2/04_auth_schema_must-change-password.sql
+database/ias2/04_auth_schema_mustChangePassword.sql
 ```
 
-The migration adds `mustChangePassword` to `UserAccount`. Existing rows keep the migration's initial value of `FALSE`; new account rows default to `TRUE`. To require a password change for an existing account, an IT Admin must use **Reset Password** for that account. Do not rerun this script; the column already exists after a successful run.
+**Expected Result:**
+The migration adds `mustChangePassword` to `UserAccount`.
+Existing rows keep the migration's initial value of FALSE/`0`; new account rows default to TRUE/`1`. 
 
-## 2. Compile
+**Note:** To require a password change for an existing account, an IT Admin must use **Reset Password** for that account.
+**Important:** Do not test the authentication flow until the Authentication **Phase 2 migration** outlined below is done.
 
-From the repository root, run:
+### Implementation details
+
+- At login, `mustChangePassword` determines whether the user must choose a new password before entering the role portal. A successful change clears the flag and returns the user to the login screen.
+- Temporary passwords use Java `SecureRandom` to generate 12 random bytes, encoded as URL-safe Base64 without padding. They are shown to the IT Admin **once** for delivery. After logging in with a temporary credential, an immediate password reset is enforced.
+- The old dashboard check that hashes and compares the literal `temppassword` is currently commented out. Required changes are enforced by the login flag instead.
+
+### Key files
+- `database/ias2/04_auth_schema_mustChangePassword.sql`
+- `src/gui/login/EnforcedPasswordResetPanel.java`
+
+----------------------------------------------------------------------
+
+## Phase 2: Salted Adaptive Password Hashing & Policy Hardening
+
+This phase transitions credential storage from legacy single-round SHA-256 to salted, adaptive PBKDF2-HMAC-SHA256 hashing and enforces modern password validation rules.
+
+**Prerequisite:** complete the Phase 1 setup above and use the local `payrollsystem_db_ias2` database.
+
+### 1. Update the schema
+
+Run this script once against `payrollsystem_db_ias2`:
 
 ```text
-ant compile
+database/ias2/05_auth_schema_passwordSalt.sql
 ```
 
-Expected result: `BUILD SUCCESSFUL`.
+This script adds a nullable `passwordSalt VARCHAR(64)` column to the `useraccount` table to store user-specific random salts.
+It marks legacy SHA-256 credentials with `mustChangePassword = TRUE` to force a re-hash upon next login.
 
-## 3. Verify forced password reset
+**Expected result:** the `UserAccount` table gains a new nullable `passwordSalt` column
 
+### 1. Secure the audit log
+
+Run this script once against `payrollsystem_db_ias2`:
+
+```text
+database/ias2/06_auth_schema_password_audit-redact.sql
+```
+
+This script overwrites existing password hashes in audit logs with `[REDACTED]` for secure audits logging.
+
+**Expected result:** the password audits display `[REDACTED]` as the values; hashes never logged.
+
+### Implementation details
+
+- Uses **PBKDF2-HMAC-SHA256** with **600,000 iterations** (in compliance with OWASP guidelines), a **256-bit derived key**, and a **16-byte random salt** (`SecureRandom`).
+- Keeps **backward compatibility** for legacy SHA-256 credentials until they are reset and rehashed.
+- Follows **NIST SP 800-63B-4, 2025** guidance for password handling:
+-- Enforces a minimum length of 8 characters (MFA is planned later).
+-- No password complexity rules
+-- Checks against list of common/breached passwords.
+- Validates passwords against the **Have I Been Pwned (HIBP)** dataset before allowing password changes.
+
+> **HIBP integration:** The client hashes the candidate password using SHA-1 locally. Only the **first 5 characters** (prefix) of the hash are transmitted to the HIBP range API (`/range/{prefix}`). The remaining 35-character suffix is matched locally against the response list, ensuring the actual password or full hash is never exposed over the network. This is called the **k-Anonymity** model.
+
+
+### Key files
+- `database/ias2/05_auth_schema_passwordSalt.sql`
+- `database/ias2/06_auth_schema_password_audit-redact.sql`
+- `src/util/PasswordCryptoUtil.java`
+- `src/util/PasswordBreachChecker.java`
+- `src/util/PasswordUtil.java`
+
+
+### Verify Login Flow (Phase 1 & 2)
+#### Test Password Reset Enforcement
 1. Sign in as an IT Admin and open an account record.
 2. Select **Reset Password**, confirm, and copy the temporary password from the dialog. The same password cannot be retrieved after the dialog closes; another reset generates a replacement.
 3. Sign in as that account with the temporary password. The application should require a password change before opening the role portal.
 4. Enter and confirm a new password. The application returns to the login screen after the update.
 5. Sign in with the new password. The account should now proceed to its role portal without another forced reset.
-6. Confirm the reset event appears in the audit log. The `mustChangePassword` flag should be `FALSE` after the new password is accepted.
+6. Confirm the reset event appears in the audit log. The `mustChangePassword` flag should be FALSE/`0` after the new password is accepted.
 
-## Implementation details
-
-- Temporary passwords use Java `SecureRandom` to generate 12 random bytes, encoded as URL-safe Base64 without padding. They are shown to the IT Admin once for delivery. Password resets for this after login is now enforced.
-- At login, `mustChangePassword` determines whether the user must choose a new password before entering the role portal. A successful change clears the flag and returns the user to the login screen.
-- The old dashboard check that hashes and compares the literal `temppassword` is currently commented out. Required changes are enforced by the login flag instead.
-
-## Key files
-
-- `database/ias2/04_auth_schema_must-change-password.sql`
-- `src/service/AccountService.java`
-- `src/service/AuthenticationService.java`
-- `src/model/dao/UserAccountDAO.java`
-- `src/gui/admin/it/ViewAccountPanel.java`
-- `src/gui/login/LoginPanel.java`
-- `src/gui/login/EnforcedPasswordResetPanel.java`
-- `src/gui/employee/EmployeeDashboardPanel.java`
-- `test/test/AuthenticationServiceTest.java`
+#### Test Password Policy Enforcement
+1. Sign in as any Employee
+2. Navigate to the Change Password page in the Employee Portal.
+3. Submitting a password with < 8 characters triggers length error.
+4. Submitting a common password (e.g., `"password"`) triggers HIBP breach error.
+5. Submitting a unique password (8+ chars, unbreached) updates successfully.

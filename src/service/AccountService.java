@@ -1,11 +1,8 @@
 package service;
 
-import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
-import java.util.Random;
 
 import model.dao.AuditLogDAO;
 import model.dao.EmployeeDAO;
@@ -71,15 +68,15 @@ public class AccountService {
         if (account == null) {
             throw new ValidationException("User account not found.");
         }
-
+        
         // Generate a new temporary password
-        newTemporaryPassword = generateTempPassword();
-        String hashedTemporaryPassword = PasswordUtil.sha256Hash(newTemporaryPassword);
+        newTemporaryPassword = PasswordUtil.generateRandomPassword();
+        PasswordUtil.applyHashedPassword(account, newTemporaryPassword);
 
         boolean oldMustChangePassword = account.getMustChangePassword();
 
         // Update the user's password and set mustChangePassword to true
-        boolean isSuccessfullyUpdated = userDao.updatePasswordAndEnforceMustChange(userID, hashedTemporaryPassword);
+        boolean isSuccessfullyUpdated = userDao.updatePasswordAndEnforceMustChange(userID, account.getPassword(), account.getPasswordSalt());
         if (!isSuccessfullyUpdated) {
             throw new ValidationException("Failed to enforce password reset. Please try again.");
         }
@@ -183,13 +180,6 @@ public class AccountService {
         }
 
         return updated;
-    }
-
-    private static String generateTempPassword() {
-        SecureRandom secureRandom = new SecureRandom();
-        byte[] randomBytes = new byte[12];
-        secureRandom.nextBytes(randomBytes);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
     }
 
     private AuditLog createAuditLog(String action, String entityModified, int entityID, String attribute, String oldVal, String newVal) {

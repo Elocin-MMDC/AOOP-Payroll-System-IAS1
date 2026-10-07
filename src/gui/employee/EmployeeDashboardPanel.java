@@ -36,12 +36,13 @@ public class EmployeeDashboardPanel extends javax.swing.JPanel {
         }
     }
     
+/* LEGACY CODE: This method is currently not in use, thus commented out. Forced password change is currently enforced
     // Warns the user if their current password is still set to the default "temppassword"
     private void checkTemporaryPassword() {
         SwingUtilities.invokeLater(() -> {
             try {
                 String pwd = dashboardService.getCurrentUserPassword();
-                if (PasswordUtil.sha256Hash("temppassword").equals(pwd)) {
+                if (PasswordUtil.hashPassword("temppassword").equals(pwd)) {
                     UIUtil.showWarningMessage(this, "<html>Your password is currently "
                             + "set to <b>\"temppassword\"</b>.<br>Please go to <b>Profile</b> "
                             + "&gt; <b>Change Password</b> to update<br>it for security.</html>", 
@@ -52,6 +53,7 @@ public class EmployeeDashboardPanel extends javax.swing.JPanel {
             }
         });
     }
+*/
 
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
