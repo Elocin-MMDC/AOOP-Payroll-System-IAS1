@@ -7,6 +7,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import service.AuthenticationService;
+import service.PasswordRecoveryService;
 import util.Session;
 import util.UIUtil;
 
@@ -15,6 +16,8 @@ public class EnforcedPasswordResetPanel extends JPanel {
     private final LoginPortal loginPortal;
     private final JPasswordField newPasswordField = new JPasswordField();
     private final JPasswordField confirmPasswordField = new JPasswordField();
+    private String recoveryEmail;
+    private String recoveryToken;
 
     public EnforcedPasswordResetPanel(LoginPortal loginPortal) {
         this.loginPortal = loginPortal;
@@ -47,6 +50,13 @@ public class EnforcedPasswordResetPanel extends JPanel {
         add(submitButton, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, 410, 370, 50));
     }
 
+    public void prepareRecoveryReset(String email, String token) {
+        recoveryEmail = email;
+        recoveryToken = token;
+        newPasswordField.setText("");
+        confirmPasswordField.setText("");
+    }
+
     private void submitPassword() {
         char[] newPassword = newPasswordField.getPassword();
         char[] confirmation = confirmPasswordField.getPassword();
@@ -60,11 +70,17 @@ public class EnforcedPasswordResetPanel extends JPanel {
                 return;
             }
 
-            // Call service to complete reset
             AuthenticationService authService = new AuthenticationService();
-            authService.completeEnforcedPasswordReset(
+            if (recoveryToken != null) {
+                new PasswordRecoveryService().resetPasswordWithToken(
+                    recoveryEmail, recoveryToken, new String(newPassword));
+                    recoveryEmail = null;
+                    recoveryToken = null;
+            } else {
+                authService.completeEnforcedPasswordReset(
                     Session.getCurrentUser().getUserID(),
                     new String(newPassword));
+            }
 
             newPasswordField.setText("");
             confirmPasswordField.setText("");

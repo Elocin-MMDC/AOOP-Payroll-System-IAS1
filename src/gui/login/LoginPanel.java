@@ -204,8 +204,7 @@ public class LoginPanel extends javax.swing.JPanel {
 
     private void jLabelForgotPasswordMouseClicked(java.awt.event.MouseEvent evt) {// GEN-FIRST:event_jLabelForgotPasswordMouseClicked
         // TODO add your handling code here:
-        CardLayout cardLayout = (CardLayout) loginPortal.getPanelParentCard().getLayout();
-        cardLayout.show(loginPortal.getPanelParentCard(), "ForgotPassword");
+        loginPortal.showSecureForgotPasswordPanel();
     }// GEN-LAST:event_jLabelForgotPasswordMouseClicked
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

@@ -11,8 +11,10 @@ import java.util.Objects;
 import model.dao.*;
 import model.pojo.*;
 import util.AccessControlUtil;
+import util.PasswordUtil;
 import util.Session;
 import util.ValidationUtil;
+import java.util.function.Consumer;
 
 public class EmployeeService {
     
@@ -166,6 +168,35 @@ public class EmployeeService {
             BigDecimal semiMonthlyRate,
             BigDecimal hourlyRate
     ) {
+            return createEmployee(lastName, firstName, birthday, phoneNumber, genderName, street, barangay, city,
+                province, zipCode, workStatusName, roleName, positionTitle, supervisorFullName, sssNumber,
+                philHealthNumber, tin, pagIbigNumber, basicSalary, semiMonthlyRate, hourlyRate, null);
+            }
+
+            public boolean createEmployee(
+                String lastName,
+                String firstName,
+                LocalDate birthday,
+                String phoneNumber,
+                String genderName,
+                String street,
+                String barangay,
+                String city,
+                String province,
+                String zipCode,
+                String workStatusName,
+                String roleName,
+                String positionTitle,
+                String supervisorFullName,
+                String sssNumber,
+                String philHealthNumber,
+                String tin,
+                String pagIbigNumber,
+                BigDecimal basicSalary,
+                BigDecimal semiMonthlyRate,
+                BigDecimal hourlyRate,
+                Consumer<String> temporaryPasswordConsumer
+            ) {
         AccessControlUtil.requireRole("HR Admin");
         
         if (!ValidationUtil.isAgeValid(birthday)) {
@@ -266,13 +297,18 @@ public class EmployeeService {
 
         // Insert UserAccount
         String username = generateUniqueUsername(firstName, lastName);
+        String temporaryPassword = PasswordUtil.generateRandomPassword();
         UserAccount user = new UserAccount();
         user.setEmployeeID(employeeID);
         user.setUsername(username);
-        user.setPassword("temppassword");
+        user.setEmail(null);
+        user.setPassword(temporaryPassword);
         user.setRoleID(roleID);
         user.setAccountStatus("Active");
         int userID = userDao.insert(user);
+        if (userID <= 0) {
+            throw new ValidationException("Unable to create the employee's user account.");
+        }
 
         // Insert default Leave Balances for every new employee
         List<LeaveType> leaveTypes = leaveTypeDao.getAll();
@@ -317,6 +353,10 @@ public class EmployeeService {
         logNewUser.setOldValue(null);
         logNewUser.setNewValue(null);
         auditDao.insert(logNewUser);
+
+        if (temporaryPasswordConsumer != null) {
+            temporaryPasswordConsumer.accept(temporaryPassword);
+        }
 
         return true;
     }

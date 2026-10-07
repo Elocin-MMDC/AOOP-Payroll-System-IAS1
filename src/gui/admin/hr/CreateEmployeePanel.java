@@ -1,6 +1,10 @@
 package gui.admin.hr;
 
+import java.awt.BorderLayout;
 import java.awt.CardLayout;
+import java.awt.FlowLayout;
+import java.awt.Toolkit;
+import java.awt.datatransfer.StringSelection;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -8,6 +12,11 @@ import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 import javax.swing.SwingWorker;
 import javax.swing.event.DocumentEvent;
@@ -140,15 +149,17 @@ public class CreateEmployeePanel extends javax.swing.JPanel {
             BigDecimal semiMonthlyRate = new BigDecimal(jTextFieldSemiMonthlyRate.getText().trim());
             BigDecimal hourlyRate = new BigDecimal(jTextFieldHourlyRate.getText().trim());
 
-            boolean success = employeeService.createEmployee(
+                String[] temporaryPassword = new String[1];
+                boolean success = employeeService.createEmployee(
                     lastName, firstName, birthday, phoneNumber, genderName,
                     street, barangay, city, province, zipCode,
                     workStatusName, roleName, positionTitle, supervisorFullName,
                     sssNumber, philHealthNumber, tin, pagIbigNumber,
-                    basicSalary, semiMonthlyRate, hourlyRate);
+                    basicSalary, semiMonthlyRate, hourlyRate,
+                    generatedPassword -> temporaryPassword[0] = generatedPassword);
 
             if (success) {
-                UIUtil.showInfoMessage(this, "Employee created successfully.", "Success");
+                showTemporaryPassword(temporaryPassword[0]);
                 CardLayout cardLayout = (CardLayout) hrPortal.getPanelParentCard().getLayout();
                 cardLayout.show(hrPortal.getPanelParentCard(), "Employees");
                 clearAll();
@@ -160,6 +171,43 @@ public class CreateEmployeePanel extends javax.swing.JPanel {
         } catch (Exception e) {
             UIUtil.showErrorMessage(this, "An unexpected error occurred. Please try again.", "Error");
         }
+    }
+
+    private void showTemporaryPassword(String password) {
+        JPasswordField passwordField = new JPasswordField(password, 24);
+        char maskedCharacter = passwordField.getEchoChar();
+        JButton visibilityButton = new JButton("Show");
+        JButton copyButton = new JButton("Copy");
+
+        visibilityButton.addActionListener(event -> {
+            boolean currentlyMasked = passwordField.getEchoChar() != 0;
+            passwordField.setEchoChar(currentlyMasked ? (char) 0 : maskedCharacter);
+            visibilityButton.setText(currentlyMasked ? "Hide" : "Show");
+        });
+        copyButton.addActionListener(event -> {
+            try {
+                Toolkit.getDefaultToolkit().getSystemClipboard()
+                        .setContents(new StringSelection(password), null);
+                copyButton.setText("Copied");
+            } catch (IllegalStateException ex) {
+                UIUtil.showErrorMessage(this, "Could not access the system clipboard.", "Copy Failed");
+            }
+        });
+
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
+        actions.add(visibilityButton);
+        actions.add(copyButton);
+
+        JPanel passwordRow = new JPanel(new BorderLayout(8, 0));
+        passwordRow.add(passwordField, BorderLayout.CENTER);
+        passwordRow.add(actions, BorderLayout.EAST);
+
+        JPanel content = new JPanel(new BorderLayout(0, 8));
+        content.add(new JLabel("Temporary password for the new employee. Copy it and share it securely; they must change it at first login."),
+                BorderLayout.NORTH);
+        content.add(passwordRow, BorderLayout.CENTER);
+
+        JOptionPane.showMessageDialog(this, content, "Employee Temporary Password", JOptionPane.INFORMATION_MESSAGE);
     }
     
     private void clearAll() {

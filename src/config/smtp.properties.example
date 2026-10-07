@@ -1,0 +1,6 @@
+# Copy this file to smtp.properties and replace the values locally.
+# Do not commit smtp.properties or share its contents.
+smtp.host=smtp.gmail.com
+smtp.port=587
+smtp.username=your-sender@gmail.com
+smtp.password=your-gmail-app-password

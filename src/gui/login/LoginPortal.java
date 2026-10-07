@@ -7,6 +7,7 @@ public class LoginPortal extends javax.swing.JFrame {
     
     private final LoginPanel loginPanel;
     private final ForgotPasswordPanel forgotPasswordPanel;
+    private final SecureForgotPasswordPanel secureForgotPasswordPanel;
     private final EnforcedPasswordResetPanel enforcedPasswordResetPanel;
 
     public LoginPortal() {
@@ -15,6 +16,7 @@ public class LoginPortal extends javax.swing.JFrame {
         setLoginWindowIcon();
         loginPanel = new LoginPanel(this);
         forgotPasswordPanel = new ForgotPasswordPanel(this);
+        secureForgotPasswordPanel = new SecureForgotPasswordPanel(this);
         enforcedPasswordResetPanel = new EnforcedPasswordResetPanel(this);
         initComponents();
         addPanels();
@@ -32,8 +34,17 @@ public class LoginPortal extends javax.swing.JFrame {
         ((java.awt.CardLayout) jPanelParentCard.getLayout()).show(jPanelParentCard, "EnforcedPasswordReset");
     }
 
+    public void showRecoveryPasswordReset(String email, String recoveryToken) {
+        enforcedPasswordResetPanel.prepareRecoveryReset(email, recoveryToken);
+        showEnforcedPasswordReset();
+    }
+
     public void showLoginPanel() {
         ((java.awt.CardLayout) jPanelParentCard.getLayout()).show(jPanelParentCard, "Login");
+    }
+
+    public void showSecureForgotPasswordPanel() {
+        ((java.awt.CardLayout) jPanelParentCard.getLayout()).show(jPanelParentCard, "NewForgotPassword");
     }
 
     public void openUserPortal() {
@@ -43,6 +54,7 @@ public class LoginPortal extends javax.swing.JFrame {
     private void addPanels() {
         getPanelParentCard().add(loginPanel, "Login");
         getPanelParentCard().add(forgotPasswordPanel, "ForgotPassword");
+        getPanelParentCard().add(secureForgotPasswordPanel, "NewForgotPassword");
         getPanelParentCard().add(enforcedPasswordResetPanel, "EnforcedPasswordReset");
     }
     
