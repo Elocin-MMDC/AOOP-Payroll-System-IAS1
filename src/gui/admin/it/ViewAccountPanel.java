@@ -55,6 +55,8 @@ public class ViewAccountPanel extends javax.swing.JPanel {
         jTextFieldPosition.setText(efd.getPositionTitle());
         jTextFieldDepartment.setText(efd.getDepartmentName());
         jTextFieldUsername.setText(ua.getUsername());
+        String emailValue = ua.getEmail();
+        jTextFieldEmailAddress.setText(emailValue == null ? "" : emailValue);
         jComboBoxRole.setSelectedItem(role.getRoleName());
         jComboBoxAccountStatus.setSelectedItem(ua.getAccountStatus());
     }
@@ -120,17 +122,18 @@ public class ViewAccountPanel extends javax.swing.JPanel {
     private void updateAccount() {
         int userID = Integer.parseInt(jTextFieldUserID.getText());
         String newUsername = jTextFieldUsername.getText().trim();
+        String newEmail = jTextFieldEmailAddress.getText().trim();
         String newRoleName = jComboBoxRole.getSelectedItem().toString();
         String newStatus = jComboBoxAccountStatus.getSelectedItem().toString();
         
-        if (newUsername == null || newUsername.trim().isEmpty() || newRoleName == null 
-                || "Select".equals(newRoleName) || newStatus == null || "Select".equals(newStatus)) {
+        if (newUsername == null || newUsername.trim().isEmpty() || newEmail == null || newEmail.trim().isEmpty()
+                || newRoleName == null || "Select".equals(newRoleName) || newStatus == null || "Select".equals(newStatus)) {
             UIUtil.showErrorMessage(this, "All fields must be filled out.", "Error");
             return;
         }
 
         try {
-            boolean success = accountService.updateAccount(userID, newUsername, newRoleName, newStatus);
+            boolean success = accountService.updateAccount(userID, newUsername, newEmail, newRoleName, newStatus);
             if (success) {
                 // Refresh pages
                 loadSelectedAccount(userID);
@@ -163,6 +166,8 @@ public class ViewAccountPanel extends javax.swing.JPanel {
         jLabelRole = new javax.swing.JLabel();
         jLabelUsername = new javax.swing.JLabel();
         jTextFieldUsername = new javax.swing.JTextField();
+        jLabelEmailAddress = new javax.swing.JLabel();
+        jTextFieldEmailAddress = new javax.swing.JTextField();
         jLabelPosition = new javax.swing.JLabel();
         jTextFieldPosition = new javax.swing.JTextField();
         jLabelDepartment = new javax.swing.JLabel();
@@ -213,6 +218,23 @@ public class ViewAccountPanel extends javax.swing.JPanel {
         jLabelName.setText("Name :");
         jPanelViewAccountBox.add(jLabelName);
         jLabelName.setBounds(20, 290, 290, 40);
+
+        jLabelEmailAddress.setBackground(new java.awt.Color(255, 255, 255));
+        jLabelEmailAddress.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        jLabelEmailAddress.setForeground(new java.awt.Color(0, 0, 0));
+        jLabelEmailAddress.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        jLabelEmailAddress.setText("Email Address :");
+        jPanelViewAccountBox.add(jLabelEmailAddress);
+        jLabelEmailAddress.setBounds(540, 290, 290, 40);
+
+        jTextFieldEmailAddress.setBackground(new java.awt.Color(255, 255, 255));
+        jTextFieldEmailAddress.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jTextFieldEmailAddressActionPerformed(evt);
+            }
+        });
+        jPanelViewAccountBox.add(jTextFieldEmailAddress);
+        jTextFieldEmailAddress.setBounds(690, 290, 350, 40);
 
         jLabelBack.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabelBack.setIcon(new javax.swing.ImageIcon(getClass().getResource("/images/back-icon.png"))); // NOI18N
@@ -268,7 +290,7 @@ public class ViewAccountPanel extends javax.swing.JPanel {
         jLabelRole.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         jLabelRole.setText("Role :");
         jPanelViewAccountBox.add(jLabelRole);
-        jLabelRole.setBounds(540, 290, 290, 40);
+        jLabelRole.setBounds(540, 370, 290, 40);
 
         jLabelUsername.setBackground(new java.awt.Color(255, 255, 255));
         jLabelUsername.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
@@ -311,7 +333,7 @@ public class ViewAccountPanel extends javax.swing.JPanel {
         jLabelDepartment.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         jLabelDepartment.setText("Department :");
         jPanelViewAccountBox.add(jLabelDepartment);
-        jLabelDepartment.setBounds(540, 210, 290, 40);
+        jLabelDepartment.setBounds(20, 370, 290, 40);
 
         jTextFieldDepartment.setBackground(new java.awt.Color(240, 240, 240));
         jTextFieldDepartment.setDisabledTextColor(new java.awt.Color(0, 0, 0));
@@ -322,7 +344,7 @@ public class ViewAccountPanel extends javax.swing.JPanel {
             }
         });
         jPanelViewAccountBox.add(jTextFieldDepartment);
-        jTextFieldDepartment.setBounds(690, 210, 350, 40);
+        jTextFieldDepartment.setBounds(170, 370, 350, 40);
 
         jButtonUpdate.setBackground(new java.awt.Color(0, 135, 0));
         jButtonUpdate.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
@@ -356,7 +378,7 @@ public class ViewAccountPanel extends javax.swing.JPanel {
             }
         });
         jPanelViewAccountBox.add(jComboBoxRole);
-        jComboBoxRole.setBounds(690, 290, 350, 40);
+        jComboBoxRole.setBounds(690, 370, 350, 40);
 
         jLabelAccountStatus.setBackground(new java.awt.Color(255, 255, 255));
         jLabelAccountStatus.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
@@ -408,6 +430,10 @@ public class ViewAccountPanel extends javax.swing.JPanel {
         // TODO add your handling code here:
     }//GEN-LAST:event_jTextFieldPositionActionPerformed
 
+    private void jTextFieldEmailAddressActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldEmailAddressActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jTextFieldEmailAddressActionPerformed
+
     private void jTextFieldDepartmentActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldDepartmentActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_jTextFieldDepartmentActionPerformed
@@ -438,6 +464,7 @@ public class ViewAccountPanel extends javax.swing.JPanel {
     private javax.swing.JLabel jLabelAccountStatus;
     private javax.swing.JLabel jLabelBack;
     private javax.swing.JLabel jLabelDepartment;
+    private javax.swing.JLabel jLabelEmailAddress;
     private javax.swing.JLabel jLabelEmployeeID;
     private javax.swing.JLabel jLabelHelloAdmin;
     private javax.swing.JLabel jLabelName;
@@ -449,6 +476,7 @@ public class ViewAccountPanel extends javax.swing.JPanel {
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanelViewAccountBox;
     private javax.swing.JTextField jTextFieldDepartment;
+    private javax.swing.JTextField jTextFieldEmailAddress;
     private javax.swing.JTextField jTextFieldEmployeeID;
     private javax.swing.JTextField jTextFieldFullName;
     private javax.swing.JTextField jTextFieldPosition;

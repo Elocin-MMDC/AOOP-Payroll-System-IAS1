@@ -3,6 +3,9 @@ package gui.employee;
 import java.awt.CardLayout;
 import java.util.Arrays;
 import service.AuthenticationService;
+import service.PasswordRecoveryService;
+import gui.login.OtpVerificationDialog;
+import model.pojo.UserAccount;
 import util.Session;
 import util.UIUtil;
 
@@ -132,41 +135,63 @@ public class ChangePasswordPanel extends javax.swing.JPanel {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButtonSubmitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonSubmitActionPerformed
-        // TODO add your handling code here:
-        String current = new String(jPasswordFieldCurrentPassword.getPassword());
-        String next = new String(jPasswordFieldNewPassword.getPassword()).trim();
-        String confirm = new String(jPasswordFieldCofirmNewPassword.getPassword()).trim();
+        String currentPassword = new String(jPasswordFieldCurrentPassword.getPassword());
+        String newPassword = new String(jPasswordFieldNewPassword.getPassword()).trim();
+        String confirmNewPassword = new String(jPasswordFieldCofirmNewPassword.getPassword()).trim();
 
-        if (current.isEmpty() || next.isEmpty() || confirm.isEmpty()) {
+        if (currentPassword.isEmpty() || newPassword.isEmpty() || confirmNewPassword.isEmpty()) {
             UIUtil.showWarningMessage(this, "All password fields are required.", "Change Password");
             return;
         }
 
-        if (!next.equals(confirm)) {
+        if (!newPassword.equals(confirmNewPassword)) {
             UIUtil.showErrorMessage(this, "New password and confirmation do not match.", "Change Password");
             return;
         }
 
-        // Attempt to change
-        AuthenticationService authService = new AuthenticationService();
-        try {
-            int userId = Session.getCurrentUser().getUserID();
-            authService.changePassword(userId, current, next);
-            UIUtil.showInfoMessage(this, "Password changed successfully!", "Change Password");
+        UserAccount currentUser = Session.getCurrentUser();
+        if (currentUser == null || currentUser.getEmail() == null || currentUser.getEmail().trim().isEmpty()) {
+            UIUtil.showErrorMessage(this, "A verified email address is required to change your password. Please contact your administrator.",
+                    "Change Password Failed");
+            return;
+        }
 
-            // Clear fields
-            Arrays.fill(jPasswordFieldCurrentPassword.getPassword(), '\0');
-            Arrays.fill(jPasswordFieldNewPassword.getPassword(), '\0');
-            Arrays.fill(jPasswordFieldCofirmNewPassword.getPassword(), '\0');
-            
-            jPasswordFieldCurrentPassword.setText("");
-            jPasswordFieldNewPassword.setText("");
-            jPasswordFieldCofirmNewPassword.setText("");
-            
+
+        try {
+            String email = currentUser.getEmail().trim();
+            boolean otpRequested = new PasswordRecoveryService().requestPasswordResetOTP(email);
+            if (!otpRequested) {
+                UIUtil.showErrorMessage(this, "Unable to send a verification code. Please try again.",
+                        "Change Password Failed");
+                return;
+            }
+
+            UIUtil.showInfoMessage(this, "A verification code has been sent to your email address. Please check your email to complete the password change process.", "Change Password");
+
+            int userId = currentUser.getUserID();
+            OtpVerificationDialog otpDialog = new OtpVerificationDialog(employeePortal, email,
+                    recoveryToken -> completePasswordChange(userId, currentPassword, newPassword, recoveryToken));
+            otpDialog.setVisible(true);
         } catch (Exception ex) {
             UIUtil.showErrorMessage(this, ex.getMessage(), "Change Password Failed");
         }
     }//GEN-LAST:event_jButtonSubmitActionPerformed
+
+    private void completePasswordChange(int userId, String currentPassword, String newPassword, String recoveryToken) {
+        if (recoveryToken == null) {
+            return;
+        }
+
+        try {
+            new AuthenticationService().changePassword(userId, currentPassword, newPassword);
+            jPasswordFieldCurrentPassword.setText("");
+            jPasswordFieldNewPassword.setText("");
+            jPasswordFieldCofirmNewPassword.setText("");
+            UIUtil.showInfoMessage(this, "Password changed successfully!", "Change Password");
+        } catch (Exception ex) {
+            UIUtil.showErrorMessage(this, ex.getMessage(), "Change Password Failed");
+        }
+    }
 
     private void jLabelBackMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabelBackMouseClicked
         // TODO add your handling code here:

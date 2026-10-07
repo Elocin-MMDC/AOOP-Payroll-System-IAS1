@@ -6,6 +6,7 @@ public class UserAccount {
     private int userID;
     private int employeeID;
     private String username;
+    private String email;
     private String password;
     private int roleID;
     private String accountStatus;
@@ -16,12 +17,13 @@ public class UserAccount {
     private Boolean mustChangePassword;
     private String passwordSalt;
 
-    public UserAccount(int userID, int employeeID, String username, String password, String passwordSalt, int roleID, String accountStatus,
+    public UserAccount(int userID, int employeeID, String username, String email, String password, String passwordSalt, int roleID, String accountStatus,
             LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime reactivatedAt,
             LocalDateTime deactivatedAt) {
         this.userID = userID;
         this.employeeID = employeeID;
         this.username = username;
+        this.email = email;
         this.password = password;
         this.passwordSalt = passwordSalt;
         this.roleID = roleID;
@@ -46,6 +48,10 @@ public class UserAccount {
 
     public String getUsername() {
         return username;
+    }
+
+    public String getEmail() {
+        return email;
     }
 
     public String getPassword() {
@@ -94,6 +100,10 @@ public class UserAccount {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public void setPassword(String password) {

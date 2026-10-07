@@ -36,7 +36,11 @@ public class AuditLogDAO {
         try (Connection conn = DBConnection.getConnection(); 
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setInt(1, log.getUserID());
+            if (log.getUserID() > 0) {
+                stmt.setInt(1, log.getUserID());
+            } else {
+                stmt.setNull(1, Types.INTEGER);
+            }
             stmt.setTimestamp(2, Timestamp.valueOf(log.getCreatedAt()));
             stmt.setString(3, log.getAction());
             stmt.setString(4, log.getEntityModified());

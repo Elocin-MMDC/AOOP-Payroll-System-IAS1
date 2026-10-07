@@ -145,7 +145,7 @@ This phase enables required password changes for new accounts and accounts whose
 Run this script once against `payrollsystem_db_ias2`:
 
 ```text
-database/ias2/04_auth_schema_mustChangePassword.sql
+database/ias2/04_auth_phase1_mustChangePassword.sql
 ```
 
 **Expected Result:**
@@ -162,7 +162,7 @@ Existing rows keep the migration's initial value of FALSE/`0`; new account rows 
 - The old dashboard check that hashes and compares the literal `temppassword` is currently commented out. Required changes are enforced by the login flag instead.
 
 ### Key files
-- `database/ias2/04_auth_schema_mustChangePassword.sql`
+- `database/ias2/04_auth_phase1_mustChangePassword.sql`
 - `src/gui/login/EnforcedPasswordResetPanel.java`
 
 ----------------------------------------------------------------------
@@ -178,7 +178,7 @@ This phase transitions credential storage from legacy single-round SHA-256 to sa
 Run this script once against `payrollsystem_db_ias2`:
 
 ```text
-database/ias2/05_auth_schema_passwordSalt.sql
+database/ias2/05_auth_phase2_passwordSalt.sql
 ```
 
 This script adds a nullable `passwordSalt VARCHAR(64)` column to the `useraccount` table to store user-specific random salts.
@@ -191,7 +191,7 @@ It marks legacy SHA-256 credentials with `mustChangePassword = TRUE` to force a 
 Run this script once against `payrollsystem_db_ias2`:
 
 ```text
-database/ias2/06_auth_schema_password_audit-redact.sql
+database/ias2/06_auth_phase2_password_audit-redact.sql
 ```
 
 This script overwrites existing password hashes in audit logs with `[REDACTED]` for secure audits logging.
@@ -212,12 +212,11 @@ This script overwrites existing password hashes in audit logs with `[REDACTED]` 
 
 
 ### Key files
-- `database/ias2/05_auth_schema_passwordSalt.sql`
-- `database/ias2/06_auth_schema_password_audit-redact.sql`
+- `database/ias2/05_auth_phase2_passwordSalt.sql`
+- `database/ias2/06_auth_phase2_password_audit-redact.sql`
 - `src/util/PasswordCryptoUtil.java`
 - `src/util/PasswordBreachChecker.java`
 - `src/util/PasswordUtil.java`
-
 
 ### Verify Login Flow (Phase 1 & 2)
 #### Test Password Reset Enforcement
@@ -229,8 +228,38 @@ This script overwrites existing password hashes in audit logs with `[REDACTED]` 
 6. Confirm the reset event appears in the audit log. The `mustChangePassword` flag should be FALSE/`0` after the new password is accepted.
 
 #### Test Password Policy Enforcement
-1. Sign in as any Employee
+1. Sign in on any account.
 2. Navigate to the Change Password page in the Employee Portal.
 3. Submitting a password with < 8 characters triggers length error.
 4. Submitting a common password (e.g., `"password"`) triggers HIBP breach error.
 5. Submitting a unique password (8+ chars, unbreached) updates successfully.
+
+### Phase 3: Email OTP Recovery
+
+#### Update schema
+Run these scripts once against `payrollsystem_db_ias2` after the Phase 2 migrations:
+
+```text
+database/ias2/07_auth_phase3_email-otp_table.sql
+database/ias2/08_auth_phase3_audit_nullable_user.sql
+```
+
+#### Set up SMTP
+- Configure a local SMTP server or use a free Gmail account for testing. Copy `src/config/smtp.properties.example` into `src/config/smtp.properties` and update it with the SMTP host, port, username, and password. Do not commit this file.
+- Update user accounts with valid email addresses for testing. The application will send OTPs to those addresses. Email addresses can be updated by the IT Admin in the Accounts page.
+> Tip: You can use aliases with Gmail for testing. For example, if your Gmail address is `email@example.com`, you can use `email+aliashere@example.com` to receive emails in the same inbox.
+
+### Implementation Details
+- The OTP migration stores only OTP and recovery-token hashes. 
+- OTPs expire after 10 minutes, are consumed on successful verification, has limited verification attempts, and are limited to ten requests per account per hour (abundant limit for testing). 
+- Recovery tokens expire. 
+- Recovery requests, verification results, and reset results are written to `AuditLog`; event values never include email addresses, OTPs, recovery tokens, or passwords. 
+- The audit migration allows attempts for unknown email addresses to be recorded with a `NULL` user ID.
+
+### Key Files
+- `src/util/OtpUtil.java`
+- `src/service/PasswordRecoveryService.java`
+- `src/service/EmailService.java`
+- `src/model/dao/EmailOtpDAO.java`
+- `src/gui/login/OtpVerificationDialog.java`
+- `src/config/smtp.properties.example`

@@ -112,13 +112,16 @@ public class AccountService {
         return newTemporaryPassword;
     }
 
-    public boolean updateAccount(int userID, String newUsername, String newRoleName, String newStatus) throws ValidationException {
+    public boolean updateAccount(int userID, String newUsername, String newEmail, String newRoleName, String newStatus) throws ValidationException {
         AccessControlUtil.requireRole("IT Admin");
         
         UserAccount existing = userDao.getById(userID);
         if (existing == null) {
             throw new ValidationException("User account not found.");
         }
+
+        String existingEmail = existing.getEmail() == null ? "" : existing.getEmail();
+        String normalizedEmail = newEmail == null ? "" : newEmail.trim();
 
         boolean updated = false;
         List<AuditLog> logs = new ArrayList<>();
@@ -138,6 +141,15 @@ public class AccountService {
             logs.add(createAuditLog("UPDATE", "UserAccount", userID, "username", existing.getUsername(), newUsername));
             if (!userDao.updateUsername(userID, newUsername)) {
                 throw new ValidationException("Failed to update username.");
+            }
+            updated = true;
+        }
+
+        // Email
+        if (!existingEmail.equals(normalizedEmail)) {
+            logs.add(createAuditLog("UPDATE", "UserAccount", userID, "email", existingEmail, normalizedEmail));
+            if (!userDao.updateEmail(userID, normalizedEmail)) {
+                throw new ValidationException("Failed to update email address.");
             }
             updated = true;
         }

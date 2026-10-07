@@ -39,7 +39,7 @@ public class PasswordUtil {
 
     //Check if at least 8 characters long
     public static boolean isPasswordLengthOkay(String plainPassword){
-        if (plainPassword.length() < 8) {
+        if (plainPassword.length() < 8 || plainPassword.length() > 64) {
             return false;
         }
         return true;
