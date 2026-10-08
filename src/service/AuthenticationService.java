@@ -13,6 +13,8 @@ import util.PasswordUtil;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.swing.JFrame;
 import model.dao.AuditLogDAO;
 import model.dao.EmployeeDAO;
@@ -20,6 +22,7 @@ import model.dao.EmployeeViewDAO;
 import model.pojo.AuditLog;
 import model.pojo.EmployeeView;
 import model.pojo.Role;
+import util.OtpUtil;
 import util.Session;
 
 public class AuthenticationService {
@@ -31,10 +34,23 @@ public class AuthenticationService {
 
     private static final int MAX_ATTEMPTS = 3;
     private static final int LOCKOUT_DURATION_MINUTES = 30;
+    private static final int PRE_AUTH_TOKEN_MINUTES = 5;
 
-    // Authenticates a user by verifying credentials and enforcing account lockout
-    // policy
-    public UserAccount login(String username, String password) throws AuthenticationException {
+    // Pending logins keyed by SHA-256 hash of the pre-authentication token; the raw token is never stored
+    private static final Map<String, PendingLogin> PENDING_LOGINS = new ConcurrentHashMap<>();
+
+    private record PendingLogin(int userID, boolean enrollmentRequired, LocalDateTime expiresAt) {}
+
+    // Returned after a correct password; grants nothing except access to the TOTP step
+    public record PreAuthChallenge(String token, String username, boolean enrollmentRequired) {}
+
+    // Step 1 of login: verifies the password and enforces account lockout policy.
+    // On success, issues a short-lived pre-authentication token. The session is only
+    // established by completeLogin after a valid TOTP code.
+    public PreAuthChallenge login(String username, String password) throws AuthenticationException {
+        // A new login attempt never inherits a previous session
+        Session.clear();
+
         if (username == null || password == null) {
             throw new AuthenticationException("Username and password must not be null.");
         }
@@ -51,17 +67,121 @@ public class AuthenticationService {
 
         // Verify password
         if (!PasswordUtil.verifyUserPassword(password, user)) {
-            int failures = getConsecutiveFailures(user.getUserID()) + 1;
-            boolean locked = failures >= MAX_ATTEMPTS;
-            LocalDateTime lockEnd = locked ? LocalDateTime.now().plusMinutes(LOCKOUT_DURATION_MINUTES) : null;
-            recordLoginAttempt(user.getUserID(), "FAILED", failures, locked, lockEnd);
+            recordFailedAttempt(user.getUserID());
             throw new AuthenticationException("Invalid username or password.");
         }
 
+        // Password verified. SUCCESS is not recorded yet, so the lockout counter keeps
+        // counting failed TOTP attempts that follow a correct password.
+        return issuePreAuthToken(user);
+    }
+
+    // Starts authenticator enrollment for a user who has not yet enabled MFA
+    public MfaService.EnrollmentDetails startMfaEnrollment(String preAuthToken) throws AuthenticationException {
+        PendingLogin pending = resolvePendingLogin(preAuthToken);
+        if (!pending.enrollmentRequired()) {
+            throw new AuthenticationException("MFA is already set up for this account.");
+        }
+
+        UserAccount user = userDao.getById(pending.userID());
+        if (user == null) {
+            cancelLogin(preAuthToken);
+            throw new AuthenticationException("Invalid username or password.");
+        }
+        return new MfaService().beginEnrollment(user);
+    }
+
+    // Step 2 of login: verifies the 6-digit TOTP (or confirms enrollment), then establishes the session
+    public UserAccount completeLogin(String preAuthToken, String code) throws AuthenticationException {
+        PendingLogin pending = resolvePendingLogin(preAuthToken);
+        int userID = pending.userID();
+        MfaService mfaService = new MfaService();
+
+        if (isLockedOut(userID)) {
+            cancelLogin(preAuthToken);
+            mfaService.auditMfaEvent(userID, userID, "MFA_LOGIN_VERIFICATION", "LOCKED");
+            throw new AuthenticationException("Account locked. Please try again later.");
+        }
+
+        UserAccount user = userDao.getById(userID);
+        if (user == null || !"Active".equals(user.getAccountStatus())) {
+            cancelLogin(preAuthToken);
+            throw new AuthenticationException("Invalid username or password.");
+        }
+
+        boolean verified;
+        if (pending.enrollmentRequired()) {
+            // confirmEnrollment records its own MFA_ENROLLMENT audit event
+            verified = mfaService.confirmEnrollment(userID, code);
+        } else {
+            MfaService.VerificationResult result = mfaService.verifyCode(userID, code);
+            mfaService.auditMfaEvent(userID, userID, "MFA_LOGIN_VERIFICATION", result.name());
+            if (result == MfaService.VerificationResult.NOT_ENROLLED) {
+                cancelLogin(preAuthToken);
+                throw new AuthenticationException("MFA is not configured correctly for this account. Please contact your IT Administrator.");
+            }
+            verified = result == MfaService.VerificationResult.SUCCESS;
+        }
+
+        if (!verified) {
+            // Failed TOTP attempts share the existing lockout counter with failed passwords
+            if (recordFailedAttempt(userID)) {
+                cancelLogin(preAuthToken);
+                throw new AuthenticationException("Too many failed attempts. Account locked. Please try again later.");
+            }
+            throw new AuthenticationException("Invalid or already used authentication code.");
+        }
+
         // Successful login
-        recordLoginAttempt(user.getUserID(), "SUCCESS", 0, false, null);
-        Session.setCurrentUser(user);
-        return user;
+        cancelLogin(preAuthToken);
+        recordLoginAttempt(userID, "SUCCESS", 0, false, null);
+        UserAccount authenticatedUser = userDao.getById(userID);
+        Session.setCurrentUser(authenticatedUser);
+        return authenticatedUser;
+    }
+
+    // Invalidates a pre-authentication token (on cancel, success, or lockout)
+    public void cancelLogin(String preAuthToken) {
+        if (preAuthToken != null && !preAuthToken.isEmpty()) {
+            PENDING_LOGINS.remove(OtpUtil.hashValue(preAuthToken));
+        }
+    }
+
+    // Reauthenticates the current user with password and current TOTP before MFA can be
+    // disabled or reset. Failures are audited and count toward the existing lockout.
+    public void reauthenticateForMfaChange(String password, String code) throws AuthenticationException {
+        UserAccount current = Session.getCurrentUser();
+        if (current == null) {
+            throw new AuthenticationException("Please log in again.");
+        }
+
+        int userID = current.getUserID();
+        MfaService mfaService = new MfaService();
+
+        if (isLockedOut(userID)) {
+            mfaService.auditMfaEvent(userID, userID, "MFA_REAUTHENTICATION", "LOCKED");
+            throw new AuthenticationException("Account locked. Please try again later.");
+        }
+
+        UserAccount user = userDao.getById(userID);
+        boolean passwordOk = user != null && password != null && !password.isEmpty()
+                && verifyPasswordSafely(password, user);
+
+        // Only check (and consume) the TOTP when the password is correct
+        MfaService.VerificationResult totpResult = passwordOk
+                ? mfaService.verifyCode(userID, code)
+                : MfaService.VerificationResult.INVALID_CODE;
+
+        if (!passwordOk || totpResult != MfaService.VerificationResult.SUCCESS) {
+            mfaService.auditMfaEvent(userID, userID, "MFA_REAUTHENTICATION",
+                    passwordOk ? totpResult.name() : "INVALID_PASSWORD");
+            if (recordFailedAttempt(userID)) {
+                throw new AuthenticationException("Too many failed attempts. Account locked. Please try again later.");
+            }
+            throw new AuthenticationException("Reauthentication failed. Check your password and authentication code.");
+        }
+
+        mfaService.auditMfaEvent(userID, userID, "MFA_REAUTHENTICATION", "SUCCESS");
     }
 
     // Log out the current user
@@ -246,6 +366,49 @@ public class AuthenticationService {
         }
         LoginLog last = recent.get(0);
         return last.isIsLocked() && last.getLockEndTime().isAfter(LocalDateTime.now());
+    }
+
+    // Records a failed password or TOTP attempt and applies the lockout policy.
+    // Returns true if this failure locked the account.
+    private boolean recordFailedAttempt(int userID) {
+        int failures = getConsecutiveFailures(userID) + 1;
+        boolean locked = failures >= MAX_ATTEMPTS;
+        LocalDateTime lockEnd = locked ? LocalDateTime.now().plusMinutes(LOCKOUT_DURATION_MINUTES) : null;
+        recordLoginAttempt(userID, "FAILED", failures, locked, lockEnd);
+        return locked;
+    }
+
+    private PreAuthChallenge issuePreAuthToken(UserAccount user) {
+        // Drop expired tokens so abandoned logins do not accumulate
+        PENDING_LOGINS.values().removeIf(p -> p.expiresAt().isBefore(LocalDateTime.now()));
+
+        String token = OtpUtil.generateRecoveryToken();
+        PENDING_LOGINS.put(OtpUtil.hashValue(token), new PendingLogin(user.getUserID(), !user.isMfaEnabled(),
+                LocalDateTime.now().plusMinutes(PRE_AUTH_TOKEN_MINUTES)));
+        return new PreAuthChallenge(token, user.getUsername(), !user.isMfaEnabled());
+    }
+
+    private PendingLogin resolvePendingLogin(String preAuthToken) throws AuthenticationException {
+        if (preAuthToken == null || preAuthToken.isEmpty()) {
+            throw new AuthenticationException("Your login session has expired. Please log in again.");
+        }
+
+        String tokenHash = OtpUtil.hashValue(preAuthToken);
+        PendingLogin pending = PENDING_LOGINS.get(tokenHash);
+        if (pending == null || pending.expiresAt().isBefore(LocalDateTime.now())) {
+            PENDING_LOGINS.remove(tokenHash);
+            throw new AuthenticationException("Your login session has expired. Please log in again.");
+        }
+        return pending;
+    }
+
+    // Legacy hash formats throw on unexpected input; treat that as a failed verification
+    private boolean verifyPasswordSafely(String password, UserAccount user) {
+        try {
+            return PasswordUtil.verifyUserPassword(password, user);
+        } catch (IllegalArgumentException ex) {
+            return false;
+        }
     }
 
     // Returns the number of consecutive failed login attempts before the last

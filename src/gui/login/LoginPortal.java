@@ -9,6 +9,7 @@ public class LoginPortal extends javax.swing.JFrame {
     private final ForgotPasswordPanel forgotPasswordPanel;
     private final SecureForgotPasswordPanel secureForgotPasswordPanel;
     private final EnforcedPasswordResetPanel enforcedPasswordResetPanel;
+    private final MfaVerificationPanel mfaVerificationPanel;
 
     public LoginPortal() {
         UIUtil.setFlatLafUI();
@@ -18,6 +19,7 @@ public class LoginPortal extends javax.swing.JFrame {
         forgotPasswordPanel = new ForgotPasswordPanel(this);
         secureForgotPasswordPanel = new SecureForgotPasswordPanel(this);
         enforcedPasswordResetPanel = new EnforcedPasswordResetPanel(this);
+        mfaVerificationPanel = new MfaVerificationPanel(this);
         initComponents();
         addPanels();
         this.setLocationRelativeTo(null);
@@ -39,6 +41,12 @@ public class LoginPortal extends javax.swing.JFrame {
         showEnforcedPasswordReset();
     }
 
+    public void showMfaVerification(service.AuthenticationService.PreAuthChallenge challenge) {
+        if (mfaVerificationPanel.prepare(challenge)) {
+            ((java.awt.CardLayout) jPanelParentCard.getLayout()).show(jPanelParentCard, "MfaVerification");
+        }
+    }
+
     public void showLoginPanel() {
         ((java.awt.CardLayout) jPanelParentCard.getLayout()).show(jPanelParentCard, "Login");
     }
@@ -56,6 +64,7 @@ public class LoginPortal extends javax.swing.JFrame {
         getPanelParentCard().add(forgotPasswordPanel, "ForgotPassword");
         getPanelParentCard().add(secureForgotPasswordPanel, "NewForgotPassword");
         getPanelParentCard().add(enforcedPasswordResetPanel, "EnforcedPasswordReset");
+        getPanelParentCard().add(mfaVerificationPanel, "MfaVerification");
     }
     
     @SuppressWarnings("unchecked")

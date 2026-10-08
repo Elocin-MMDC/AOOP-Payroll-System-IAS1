@@ -263,3 +263,61 @@ database/ias2/08_auth_phase3_audit_nullable_user.sql
 - `src/model/dao/EmailOtpDAO.java`
 - `src/gui/login/OtpVerificationDialog.java`
 - `src/config/smtp.properties.example`
+
+----------------------------------------------------------------------
+
+### Phase 4: TOTP-Based MFA Enforcement
+
+This phase requires every account to verify a 6-digit code from an authenticator app (Google Authenticator, Microsoft Authenticator, etc.) after the password is accepted. Users without MFA enroll at their next login.
+
+**Prerequisite:** complete the PII Encryption at Rest setup (the TOTP secrets are encrypted with `MOTORPH_PII_AES_KEY`) and the Phase 1–3 migrations above.
+
+#### Update schema
+Run this script once against `payrollsystem_db_ias2` after the Phase 3 migrations:
+
+```text
+database/ias2/09_auth_phase4_totp_mfa.sql
+```
+
+**Expected result:** `UserAccount` gains an `mfaEnabled` column (FALSE/`0` for all existing rows), and a new `usertotp` table is created.
+
+#### Library
+ZXing core (`lib/zxing-core-3.5.3.jar`, from Maven Central) is used for QR code generation and is already referenced in `nbproject/project.properties`. No other setup is required.
+
+### Implementation Details
+- **Login flow:** username/password → existing lockout check → PBKDF2 verification → **temporary pre-authentication token** (256-bit random, 5-minute expiry, single use, held in memory only as a SHA-256 hash) → TOTP enrollment or verification → session created → `mustChangePassword` check → role portal. No session exists until the TOTP is accepted.
+- **Account lockout is reused:** a correct password no longer records `SUCCESS` by itself. Failed TOTP attempts are recorded as `FAILED` in `LoginLog` and share the existing 3-attempt / 30-minute lockout with failed passwords. `SUCCESS` is recorded only after the TOTP step.
+- **TOTP:** RFC 6238 (HMAC-SHA1, 30-second step, 6 digits, ±1 step allowed for clock drift). Secrets are 160-bit values from `SecureRandom`.
+- **Encryption:** secrets are stored in `usertotp.encryptedSecret` as AES-256-GCM `v1:` envelopes via `PiiCryptoUtil`. The AAD context includes the user ID, so a secret copied to another row will not decrypt.
+- **Replay prevention:** the last accepted time step is stored in `usertotp.lastUsedTimeStep`. A code is accepted only through an atomic `UPDATE ... WHERE lastUsedTimeStep < ?`, so the same (or an older) code can never be used twice.
+- **MFA reset (reauthentication required):**
+  - *Self-service:* Employee Portal → Profile → **Reset MFA**. Requires the current password **and** a current TOTP code. On success the authenticator is removed and the user is logged out; a new authenticator is enrolled at next login.
+  - *Lost device:* IT Admin → Accounts → view account → **Reset MFA**. The IT Admin must reauthenticate with **their own** password and TOTP.
+  - Failed reauthentication is denied, audited, and counts toward the lockout.
+- **Audit events** (`AuditLog`, `entityModified = 'MFA'`, event in `attributeModified`, outcome in `newValue`): `MFA_ENROLLMENT`, `MFA_LOGIN_VERIFICATION` (`SUCCESS`, `INVALID_CODE`, `REPLAY_REJECTED`, `LOCKED`, …), `MFA_REAUTHENTICATION`, `MFA_RESET`. Changes to `mfaEnabled` are also logged as `UserAccount` updates. Secrets and codes are never logged.
+
+### Verify MFA (Phase 4)
+#### Enrollment and login
+1. Sign in with any account. After the password, a QR code is shown. Scan it with an authenticator app and enter the 6-digit code.
+2. Confirm `mfaEnabled = 1` for the account and that `usertotp.encryptedSecret` starts with `v1:` (no readable secret).
+3. Log out and sign in again. Only the code prompt is shown (no QR code). A valid code opens the role portal.
+
+#### Replay and lockout
+1. Sign in, enter a valid code, then log out and immediately sign in again with **the same code** (within 30 seconds). It is rejected and `REPLAY_REJECTED` is audited.
+2. Enter three wrong codes after a correct password. The account is locked (same lockout as wrong passwords) and the user is returned to the login screen.
+
+#### Reset
+1. Profile → **Reset MFA**. Wrong password or code → denied and `MFA_REAUTHENTICATION` failure audited.
+2. Correct password and code → logged out; the next login shows a new QR code.
+3. Check the Security page audit log for the MFA events above.
+
+### Key Files
+- `database/ias2/09_auth_phase4_totp_mfa.sql`
+- `src/util/TotpUtil.java`
+- `src/util/QrCodeUtil.java`
+- `src/service/MfaService.java`
+- `src/model/dao/UserTotpDAO.java`
+- `src/model/pojo/UserTotp.java`
+- `src/gui/login/MfaVerificationPanel.java`
+- `src/gui/login/MfaReauthDialog.java`
+- `src/service/AuthenticationService.java` (two-step login: `login` → `completeLogin`)
