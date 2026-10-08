@@ -16,6 +16,7 @@ public class UserAccount {
     private LocalDateTime deactivatedAt;
     private Boolean mustChangePassword;
     private String passwordSalt;
+    private boolean mfaEnabled;
 
     public UserAccount(int userID, int employeeID, String username, String email, String password, String passwordSalt, int roleID, String accountStatus,
             LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime reactivatedAt,
@@ -90,6 +91,10 @@ public class UserAccount {
         return passwordSalt;
     }
 
+    public boolean isMfaEnabled() {
+        return mfaEnabled;
+    }
+
     public void setUserID(int userID) {
         this.userID = userID;
     }
@@ -140,6 +145,10 @@ public class UserAccount {
 
     public void setPasswordSalt(String passwordSalt) {
         this.passwordSalt = passwordSalt;
+    }
+
+    public void setMfaEnabled(boolean mfaEnabled) {
+        this.mfaEnabled = mfaEnabled;
     }
 
     @Override

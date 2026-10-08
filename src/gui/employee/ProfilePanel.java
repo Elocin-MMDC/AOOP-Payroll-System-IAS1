@@ -1,8 +1,11 @@
 package gui.employee;
 
+import gui.login.MfaReauthDialog;
 import java.awt.CardLayout;
+import javax.swing.JButton;
 import model.dao.EmployeeViewDAO;
 import model.pojo.EmployeeView;
+import service.MfaService;
 import util.Session;
 import util.UIUtil;
 
@@ -13,8 +16,47 @@ public class ProfilePanel extends javax.swing.JPanel {
     public ProfilePanel(EmployeePortal employeePortal) {
         this.employeePortal = employeePortal;
         initComponents();
+        addResetMfaButton();
         UIUtil.setGreeting(jLabelHelloEmployee, "Employee");
         loadProfile();
+    }
+
+    // Added outside initComponents so the NetBeans form stays in sync
+    private void addResetMfaButton() {
+        JButton jButtonResetMfa = new JButton("Reset MFA");
+        jButtonResetMfa.setBackground(new java.awt.Color(0, 43, 89));
+        jButtonResetMfa.setFont(new java.awt.Font("Segoe UI", 1, 14));
+        jButtonResetMfa.setForeground(new java.awt.Color(255, 255, 255));
+        jButtonResetMfa.addActionListener(evt -> resetMfa());
+        jPanelProfileBox.add(jButtonResetMfa);
+        jButtonResetMfa.setBounds(580, 40, 220, 40);
+    }
+
+    // Removes the current authenticator after password + TOTP reauthentication
+    private void resetMfa() {
+        if (!UIUtil.showConfirmation(this, "Resetting MFA removes your current authenticator app. "
+                + "You will be logged out and must set up a new authenticator at your next login. Continue?")) {
+            return;
+        }
+
+        MfaReauthDialog.Result result = MfaReauthDialog.prompt(this, "Reset two-factor authentication.");
+        if (result == MfaReauthDialog.Result.LOCKED) {
+            MfaReauthDialog.endSession(this);
+            return;
+        }
+        if (result != MfaReauthDialog.Result.VERIFIED) {
+            return;
+        }
+
+        try {
+            new MfaService().resetOwnMfa();
+        } catch (Exception ex) {
+            UIUtil.showErrorMessage(this, "Failed to reset MFA. Please try again.", "Reset MFA Failed");
+            return;
+        }
+
+        UIUtil.showInfoMessage(this, "MFA has been reset. Log in again to set up your new authenticator app.", "MFA Reset");
+        MfaReauthDialog.endSession(this);
     }
     
     private void loadProfile() {

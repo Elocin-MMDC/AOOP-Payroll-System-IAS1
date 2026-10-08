@@ -134,6 +134,7 @@ public class UserAccountDAO {
         u.setDeactivatedAt(de != null ? de.toLocalDateTime() : null);
         u.setMustChangePassword(rs.getBoolean("mustChangePassword"));
         u.setPasswordSalt(rs.getString("passwordSalt"));
+        u.setMfaEnabled(rs.getBoolean("mfaEnabled"));
         return u;
     }
 
