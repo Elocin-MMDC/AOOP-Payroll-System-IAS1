@@ -20,6 +20,7 @@ import javax.swing.JTextField;
 import javax.swing.RowFilter;
 import javax.swing.SwingConstants;
 import javax.swing.Timer;
+import javax.swing.UIManager;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -127,6 +128,8 @@ public class UIUtil {
     public static void setFlatLafUI() {
         try {
             FlatIntelliJLaf.setup();
+            // Show the eye button on every password field so users can check what they typed
+            UIManager.put("PasswordField.showRevealButton", true);
         } catch (Exception ex) {
             System.err.println("Failed to initialize FlatLaf.");
         }
