@@ -80,15 +80,30 @@ public class MfaVerificationPanel extends JPanel {
             }
         });
 
-        add(title, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, 20, 370, 36));
-        add(subtitle, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, 56, 370, 50));
-        add(qrLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(155, 108, QR_SIZE, QR_SIZE));
-        add(manualKeyLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, 292, 370, 20));
-        add(manualKeyField, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, 312, 370, 30));
-        add(codeLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, 352, 370, 22));
-        add(codeField, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, 376, 370, 44));
-        add(verifyButton, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, 436, 370, 50));
-        add(cancelLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, 500, 370, 22));
+        layoutFor(true);
+    }
+
+    // Enrollment shows the QR code; verification centers the code entry without the QR gap
+    private void layoutFor(boolean showQr) {
+        removeAll();
+        int y = showQr ? 20 : 140;
+        add(title, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, y, 370, 36));
+        add(subtitle, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, y + 36, 370, 50));
+        y += 88;
+        if (showQr) {
+            add(qrLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(155, y, QR_SIZE, QR_SIZE));
+            add(manualKeyLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, y + 184, 370, 20));
+            add(manualKeyField, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, y + 204, 370, 30));
+            y += 244;
+        } else {
+            y += 20;
+        }
+        add(codeLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, y, 370, 22));
+        add(codeField, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, y + 24, 370, 44));
+        add(verifyButton, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, y + 84, 370, 50));
+        add(cancelLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, y + 148, 370, 22));
+        revalidate();
+        repaint();
     }
 
     /**
@@ -119,9 +134,7 @@ public class MfaVerificationPanel extends JPanel {
             subtitle.setText("<html>Enter the 6-digit code from your authenticator app to continue.</html>");
         }
 
-        qrLabel.setVisible(enrollment);
-        manualKeyLabel.setVisible(enrollment);
-        manualKeyField.setVisible(enrollment);
+        layoutFor(enrollment);
         return true;
     }
 
