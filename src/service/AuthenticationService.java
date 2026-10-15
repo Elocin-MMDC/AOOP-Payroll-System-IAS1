@@ -261,11 +261,11 @@ public class AuthenticationService {
 
         // Validate password policy (length, breach check)
         if (!PasswordUtil.isPasswordLengthOkay(newPassword)) {
-            throw new AuthenticationException("New password must be at least 8 characters long.");
+            throw new AuthenticationException("New password must be between 8 and 64 characters.");
         }
         if (PasswordUtil.isPasswordCompromised(newPassword)) {
             throw new AuthenticationException(
-                    "New password has been compromised in a data breach. Please choose a different password.");
+                    "The password you have chosen is known to be compromised. Please choose a different password.");
         }
 
         PasswordUtil.applyHashedPassword(user, newPassword);

@@ -7,6 +7,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import model.pojo.UserAccount;
@@ -33,7 +34,7 @@ public class MfaVerificationPanel extends JPanel {
     private final JLabel subtitle = new JLabel();
     private final JLabel qrLabel = new JLabel();
     private final JLabel manualKeyLabel = new JLabel("Can't scan? Enter this key manually:");
-    private final JTextField manualKeyField = new JTextField();
+    private final JPasswordField manualKeyField = new JPasswordField();
     private final JLabel codeLabel = new JLabel("6-digit authentication code");
     private final JTextField codeField = new JTextField();
     private final JButton verifyButton = new JButton("VERIFY");
@@ -47,7 +48,7 @@ public class MfaVerificationPanel extends JPanel {
         setBackground(Color.WHITE);
         setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
-        title.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        title.setFont(new Font("Segoe UI", Font.BOLD, 23));
         title.setForeground(BRAND);
 
         subtitle.setFont(new Font("Segoe UI", Font.PLAIN, 13));
@@ -87,7 +88,7 @@ public class MfaVerificationPanel extends JPanel {
     private void layoutFor(boolean showQr) {
         removeAll();
         int y = showQr ? 20 : 140;
-        add(title, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, y, 370, 36));
+        add(title, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, y, 370, 40));
         add(subtitle, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, y + 36, 370, 50));
         y += 88;
         if (showQr) {
@@ -119,7 +120,7 @@ public class MfaVerificationPanel extends JPanel {
         if (enrollment) {
             try {
                 MfaService.EnrollmentDetails details = authService.startMfaEnrollment(preAuthToken);
-                title.setText("Set up two-factor authentication");
+                title.setText("<html>" + "Set up two-factor authentication" + "</html>");
                 subtitle.setText("<html>Scan this QR code with an authenticator app (e.g. Google or Microsoft "
                         + "Authenticator), then enter the 6-digit code it shows.</html>");
                 qrLabel.setIcon(new ImageIcon(QrCodeUtil.generateQrImage(details.otpAuthUri(), QR_SIZE)));

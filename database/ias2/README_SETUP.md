@@ -140,7 +140,7 @@ This phase enables required password changes for new accounts and accounts whose
 
 **Prerequisite:** complete the PII Encryption at Rest setup above and use the local `payrollsystem_db_ias2` database.
 
-### 1. Update the schema
+#### 1. Update the schema
 
 Run this script once against `payrollsystem_db_ias2`:
 
@@ -155,25 +155,25 @@ Existing rows keep the migration's initial value of FALSE/`0`; new account rows 
 **Note:** To require a password change for an existing account, an IT Admin must use **Reset Password** for that account.
 **Important:** Do not test the authentication flow until the Authentication **Phase 2 migration** outlined below is done.
 
-### Implementation details
+#### Implementation details
 
 - At login, `mustChangePassword` determines whether the user must choose a new password before entering the role portal. A successful change clears the flag and returns the user to the login screen.
 - Temporary passwords use Java `SecureRandom` to generate 12 random bytes, encoded as URL-safe Base64 without padding. They are shown to the IT Admin **once** for delivery. After logging in with a temporary credential, an immediate password reset is enforced.
 - The old dashboard check that hashes and compares the literal `temppassword` is currently commented out. Required changes are enforced by the login flag instead.
 
-### Key files
+#### Key files
 - `database/ias2/04_auth_phase1_mustChangePassword.sql`
 - `src/gui/login/EnforcedPasswordResetPanel.java`
 
 ----------------------------------------------------------------------
 
-## Phase 2: Salted Adaptive Password Hashing & Policy Hardening
+### Phase 2: Salted Adaptive Password Hashing & Policy Hardening
 
 This phase transitions credential storage from legacy single-round SHA-256 to salted, adaptive PBKDF2-HMAC-SHA256 hashing and enforces modern password validation rules.
 
 **Prerequisite:** complete the Phase 1 setup above and use the local `payrollsystem_db_ias2` database.
 
-### 1. Update the schema
+#### 1. Update the schema
 
 Run this script once against `payrollsystem_db_ias2`:
 
@@ -186,7 +186,7 @@ It marks legacy SHA-256 credentials with `mustChangePassword = TRUE` to force a 
 
 **Expected result:** the `UserAccount` table gains a new nullable `passwordSalt` column
 
-### 1. Secure the audit log
+#### 2. Secure the audit log
 
 Run this script once against `payrollsystem_db_ias2`:
 
@@ -198,7 +198,7 @@ This script overwrites existing password hashes in audit logs with `[REDACTED]` 
 
 **Expected result:** the password audits display `[REDACTED]` as the values; hashes never logged.
 
-### Implementation details
+#### Implementation details
 
 - Uses **PBKDF2-HMAC-SHA256** with **600,000 iterations** (in compliance with OWASP guidelines), a **256-bit derived key**, and a **16-byte random salt** (`SecureRandom`).
 - Keeps **backward compatibility** for legacy SHA-256 credentials until they are reset and rehashed.
@@ -211,15 +211,15 @@ This script overwrites existing password hashes in audit logs with `[REDACTED]` 
 > **HIBP integration:** The client hashes the candidate password using SHA-1 locally. Only the **first 5 characters** (prefix) of the hash are transmitted to the HIBP range API (`/range/{prefix}`). The remaining 35-character suffix is matched locally against the response list, ensuring the actual password or full hash is never exposed over the network. This is called the **k-Anonymity** model.
 
 
-### Key files
+#### Key files
 - `database/ias2/05_auth_phase2_passwordSalt.sql`
 - `database/ias2/06_auth_phase2_password_audit-redact.sql`
 - `src/util/PasswordCryptoUtil.java`
 - `src/util/PasswordBreachChecker.java`
 - `src/util/PasswordUtil.java`
 
-### Verify Login Flow (Phase 1 & 2)
-#### Test Password Reset Enforcement
+#### Verify Login Flow (Phase 1 & 2)
+##### Test Password Reset Enforcement
 1. Sign in as an IT Admin and open an account record.
 2. Select **Reset Password**, confirm, and copy the temporary password from the dialog. The same password cannot be retrieved after the dialog closes; another reset generates a replacement.
 3. Sign in as that account with the temporary password. The application should require a password change before opening the role portal.
@@ -227,7 +227,7 @@ This script overwrites existing password hashes in audit logs with `[REDACTED]` 
 5. Sign in with the new password. The account should now proceed to its role portal without another forced reset.
 6. Confirm the reset event appears in the audit log. The `mustChangePassword` flag should be FALSE/`0` after the new password is accepted.
 
-#### Test Password Policy Enforcement
+##### Test Password Policy Enforcement
 1. Sign in on any account.
 2. Navigate to the Change Password page in the Employee Portal.
 3. Submitting a password with < 8 characters triggers length error.
@@ -249,14 +249,14 @@ database/ias2/08_auth_phase3_audit_nullable_user.sql
 - Update user accounts with valid email addresses for testing. The application will send OTPs to those addresses. Email addresses can be updated by the IT Admin in the Accounts page.
 > Tip: You can use aliases with Gmail for testing. For example, if your Gmail address is `email@example.com`, you can use `email+aliashere@example.com` to receive emails in the same inbox.
 
-### Implementation Details
+#### Implementation Details
 - The OTP migration stores only OTP and recovery-token hashes. 
 - OTPs expire after 10 minutes, are consumed on successful verification, has limited verification attempts, and are limited to ten requests per account per hour (abundant limit for testing). 
 - Recovery tokens expire. 
 - Recovery requests, verification results, and reset results are written to `AuditLog`; event values never include email addresses, OTPs, recovery tokens, or passwords. 
 - The audit migration allows attempts for unknown email addresses to be recorded with a `NULL` user ID.
 
-### Key Files
+#### Key Files
 - `src/util/OtpUtil.java`
 - `src/service/PasswordRecoveryService.java`
 - `src/service/EmailService.java`

@@ -92,15 +92,6 @@ public class PasswordRecoveryService {
                 throw new IllegalArgumentException("The recovery code is invalid or expired. Please request a new code.");
             }
 
-            if (!PasswordUtil.isPasswordLengthOkay(newPassword)) {
-                throw new IllegalArgumentException("Password must be between 8 and 64 characters.");
-            }
-
-            if (PasswordUtil.isPasswordCompromised(newPassword)) {
-                throw new IllegalArgumentException(
-                        "The password you have chosen is known to be compromised. Please choose a different password.");
-            }
-
             AuthenticationService authenticationService = new AuthenticationService();
             authenticationService.completeEnforcedPasswordReset(auditUserID, newPassword);
             auditRecoveryEvent(auditUserID, "PASSWORD_RESET", "SUCCESS");
