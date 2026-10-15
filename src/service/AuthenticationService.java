@@ -3,7 +3,6 @@ package service;
 import gui.admin.finance.AdminFinancePortal;
 import gui.admin.hr.AdminHRPortal;
 import gui.admin.it.AdminITPortal;
-import java.time.LocalDate;
 import model.dao.LoginLogDAO;
 import model.dao.RoleDAO;
 import model.dao.UserAccountDAO;
@@ -11,13 +10,11 @@ import model.pojo.LoginLog;
 import model.pojo.UserAccount;
 import util.PasswordUtil;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.swing.JFrame;
 import model.dao.AuditLogDAO;
-import model.dao.EmployeeDAO;
 import model.dao.EmployeeViewDAO;
 import model.pojo.AuditLog;
 import model.pojo.EmployeeView;
@@ -30,7 +27,6 @@ public class AuthenticationService {
     private final UserAccountDAO userDao = new UserAccountDAO();
     private final RoleDAO roleDao = new RoleDAO();
     private final LoginLogDAO logDao = new LoginLogDAO();
-    private final EmployeeDAO employeeDao = new EmployeeDAO();
 
     private static final int MAX_ATTEMPTS = 3;
     private static final int LOCKOUT_DURATION_MINUTES = 30;
@@ -216,14 +212,7 @@ public class AuthenticationService {
             throw new AuthenticationException("New password cannot be the same as current password.");
         }
 
-        // Validate password policy (length, breach check)
-        if (!PasswordUtil.isPasswordLengthOkay(newPassword)) {
-            throw new AuthenticationException("New password must be at least 8 characters long.");
-        }
-        if (PasswordUtil.isPasswordCompromised(newPassword)) {
-            throw new AuthenticationException(
-                    "New password has been compromised in a data breach. Please choose a different password.");
-        }
+        validateNewPassword(newPassword);
 
         // Hash and apply new password
         PasswordUtil.applyHashedPassword(user, newPassword);
@@ -246,6 +235,18 @@ public class AuthenticationService {
         auditDao.insert(log);
     }
 
+    // Password policy shared by every password-setting path: 8-64 characters (NIST SP 800-63B-4)
+    // and not found in known breaches (the breach check is skipped when HIBP cannot be reached).
+    public void validateNewPassword(String newPassword) throws AuthenticationException {
+        if (newPassword == null || !PasswordUtil.isPasswordLengthOkay(newPassword)) {
+            throw new AuthenticationException("New password must be between 8 and 64 characters.");
+        }
+        if (PasswordUtil.isPasswordCompromised(newPassword)) {
+            throw new AuthenticationException(
+                    "The password you have chosen is known to be compromised. Please choose a different password.");
+        }
+    }
+
     // Change the password and clear the mustChangePassword flag
     public void completeEnforcedPasswordReset(int userId, String newPassword) throws AuthenticationException {
         // Fetch user
@@ -259,14 +260,7 @@ public class AuthenticationService {
             throw new AuthenticationException("New password cannot be the same as current password");
         }
 
-        // Validate password policy (length, breach check)
-        if (!PasswordUtil.isPasswordLengthOkay(newPassword)) {
-            throw new AuthenticationException("New password must be between 8 and 64 characters.");
-        }
-        if (PasswordUtil.isPasswordCompromised(newPassword)) {
-            throw new AuthenticationException(
-                    "The password you have chosen is known to be compromised. Please choose a different password.");
-        }
+        validateNewPassword(newPassword);
 
         PasswordUtil.applyHashedPassword(user, newPassword);
 
@@ -291,70 +285,6 @@ public class AuthenticationService {
         log.setAttributeModified("mustChangePassword");
         log.setOldValue("true");
         log.setNewValue("false");
-        auditDao.insert(log);
-    }
-
-    public boolean verifyIdentity(int employeeID, String birthdayStr, String sssNumber) {
-        // Basic null / format checks
-        if (birthdayStr == null || sssNumber == null) {
-            return false;
-        }
-
-        LocalDate dob = parseDateSafely(birthdayStr);
-        if (dob == null) {
-            return false;
-        }
-
-        return employeeDao.verifyIdentity(employeeID, dob, sssNumber);
-    }
-
-    private LocalDate parseDateSafely(String dateStr) {
-        try {
-            return LocalDate.parse(dateStr);
-        } catch (DateTimeParseException ex) {
-            return null;
-        }
-    }
-
-    // Verify identity then set new password
-    public void resetPassword(String username, String birthday, String sssNumber,
-            String newPassword) throws AuthenticationException {
-        // Fetch and verify
-        UserAccount user = userDao.getByUsername(username);
-        if (user == null) {
-            throw new AuthenticationException("User not found.");
-        }
-        if (!verifyIdentity(user.getEmployeeID(), birthday, sssNumber)) {
-            throw new AuthenticationException("Verification failed.");
-        }
-
-        // Validate password policy (length, breach check)
-        if (!PasswordUtil.isPasswordLengthOkay(newPassword)) {
-            throw new AuthenticationException("New password must be at least 8 characters long.");
-        }
-        if (PasswordUtil.isPasswordCompromised(newPassword)) {
-            throw new AuthenticationException(
-                    "New password has been compromised in a data breach. Please choose a different password.");
-        }
-
-        // Apply change
-        PasswordUtil.applyHashedPassword(user, newPassword);
-        boolean ok = userDao.update(user);
-        if (!ok) {
-            throw new AuthenticationException("Failed to update password.");
-        }
-
-        // Audit
-        AuditLogDAO auditDao = new AuditLogDAO();
-        AuditLog log = new AuditLog();
-        log.setUserID(user.getUserID());
-        log.setCreatedAt(LocalDateTime.now());
-        log.setAction("UPDATE");
-        log.setEntityModified("UserAccount");
-        log.setEntityID(user.getUserID());
-        log.setAttributeModified("password");
-        log.setOldValue("[REDACTED]");
-        log.setNewValue("[REDACTED]");
         auditDao.insert(log);
     }
 

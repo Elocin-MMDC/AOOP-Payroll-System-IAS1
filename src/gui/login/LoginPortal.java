@@ -6,7 +6,6 @@ import util.UIUtil;
 public class LoginPortal extends javax.swing.JFrame {
     
     private final LoginPanel loginPanel;
-    private final ForgotPasswordPanel forgotPasswordPanel;
     private final SecureForgotPasswordPanel secureForgotPasswordPanel;
     private final EnforcedPasswordResetPanel enforcedPasswordResetPanel;
     private final MfaVerificationPanel mfaVerificationPanel;
@@ -16,7 +15,6 @@ public class LoginPortal extends javax.swing.JFrame {
         this.setTitle("MotorPH Login Portal");
         setLoginWindowIcon();
         loginPanel = new LoginPanel(this);
-        forgotPasswordPanel = new ForgotPasswordPanel(this);
         secureForgotPasswordPanel = new SecureForgotPasswordPanel(this);
         enforcedPasswordResetPanel = new EnforcedPasswordResetPanel(this);
         mfaVerificationPanel = new MfaVerificationPanel(this);
@@ -61,7 +59,6 @@ public class LoginPortal extends javax.swing.JFrame {
     
     private void addPanels() {
         getPanelParentCard().add(loginPanel, "Login");
-        getPanelParentCard().add(forgotPasswordPanel, "ForgotPassword");
         getPanelParentCard().add(secureForgotPasswordPanel, "NewForgotPassword");
         getPanelParentCard().add(enforcedPasswordResetPanel, "EnforcedPasswordReset");
         getPanelParentCard().add(mfaVerificationPanel, "MfaVerification");

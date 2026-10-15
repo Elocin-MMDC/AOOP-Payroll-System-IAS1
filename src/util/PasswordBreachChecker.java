@@ -36,10 +36,13 @@ public class PasswordBreachChecker {
             PasswordSha1Hash hash = hashToSha1(plainPassword);
             String responseBody = fetchPwnedPrefixList(hash.prefix());
             return isSuffixInResponse(responseBody, hash.suffix());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
         } catch (Exception e) {
-            // Fail-open: If the HIBP service is offline/unreachable, allow normal
-            // login/registration
-            e.printStackTrace();
+            // Fail-open: if the HIBP service is offline/unreachable, password changes still work
+            // without an internet connection; length rules are still enforced
+            System.err.println("HIBP breach check skipped (service unreachable): " + e.getClass().getSimpleName());
             return false;
         }
     }
@@ -63,6 +66,10 @@ public class PasswordBreachChecker {
                 .build();
 
         HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
+        // An error response is not a valid suffix list; treat it as the service being unavailable
+        if (response.statusCode() != 200) {
+            throw new IllegalStateException("HIBP returned HTTP " + response.statusCode());
+        }
         return response.body();
     }
 

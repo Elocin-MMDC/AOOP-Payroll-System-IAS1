@@ -18,7 +18,7 @@
 	<queryString language="SQL">
 		<![CDATA[
                     SELECT *
-                    FROM payrollsystem_db.monthlypayrollsummaryreportview
+                    FROM monthlypayrollsummaryreportview
                     WHERE payStartDate >= $P{payStartDate}
                     AND payEndDate   <= $P{payEndDate}
                 ]]>

@@ -17,15 +17,29 @@ public class MonthlyPayrollSummaryReportViewDAO {
     
     // Retrieve report by pay period
     public List<MonthlyPayrollSummaryReportView> getByPayPeriod(LocalDate payStartDate, LocalDate payEndDate) {
-        List<MonthlyPayrollSummaryReportView> records = new ArrayList<>();
-
         String sql = """
         SELECT * FROM MonthlyPayrollSummaryReportView
         WHERE payStartDate = ? AND payEndDate = ?
         ORDER BY employeeID
     """;
+        return query(sql, payStartDate, payEndDate);
+    }
 
-        try (Connection conn = DBConnection.getConnection(); 
+    // Retrieve all pay periods within a date range (used by the printed Monthly Payroll Summary)
+    public List<MonthlyPayrollSummaryReportView> getWithinDateRange(LocalDate startDate, LocalDate endDate) {
+        String sql = """
+        SELECT * FROM MonthlyPayrollSummaryReportView
+        WHERE payStartDate >= ? AND payEndDate <= ?
+        ORDER BY payStartDate, employeeID
+    """;
+        return query(sql, startDate, endDate);
+    }
+
+    // Runs a date-bounded query and decrypts the government IDs of each row
+    private List<MonthlyPayrollSummaryReportView> query(String sql, LocalDate payStartDate, LocalDate payEndDate) {
+        List<MonthlyPayrollSummaryReportView> records = new ArrayList<>();
+
+        try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setDate(1, Date.valueOf(payStartDate));

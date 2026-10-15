@@ -10,6 +10,9 @@ import util.PasswordCryptoUtil.HashResult;
 
 public class PasswordUtil {
 
+    // Marks a passwordSalt whose hash is PBKDF2 applied to a legacy SHA-256 hash (set by LegacyPasswordBackfillTool)
+    public static final String WRAPPED_LEGACY_SALT_PREFIX = "sha256:";
+
     // Applies salt and hash directly onto a UserAccount entity.
     public static void applyHashedPassword(UserAccount user, String plainPassword) {
         HashResult result = PasswordCryptoUtil.hashPassword(plainPassword);
@@ -26,7 +29,19 @@ public class PasswordUtil {
             return verify_sha256hash(plainPassword, user.getPassword());
         }
 
+        // Backfilled legacy credential: stored hash = PBKDF2(SHA-256(password)), so pre-hash before verifying
+        if (user.getPasswordSalt().startsWith(WRAPPED_LEGACY_SALT_PREFIX)) {
+            String salt = user.getPasswordSalt().substring(WRAPPED_LEGACY_SALT_PREFIX.length());
+            return PasswordCryptoUtil.verifyPassword(sha256Hash(plainPassword), user.getPassword(), salt);
+        }
+
         return PasswordCryptoUtil.verifyPassword(plainPassword, user.getPassword(), user.getPasswordSalt());
+    }
+
+    // Wraps a legacy unsalted SHA-256 hash with salted PBKDF2-HMAC-SHA256 without needing the original password
+    public static HashResult wrapLegacySha256Hash(String legacySha256Hex) {
+        HashResult wrapped = PasswordCryptoUtil.hashPassword(legacySha256Hex.toLowerCase());
+        return new HashResult(wrapped.hash(), WRAPPED_LEGACY_SALT_PREFIX + wrapped.salt());
     }
 
     // Generates a randomized password for user accounts

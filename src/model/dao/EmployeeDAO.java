@@ -287,32 +287,4 @@ public class EmployeeDAO {
         }
     }
     
-    // Verifies if the given employeeID, birthday, and SSS number match a valid record for the forgot password feature
-    public boolean verifyIdentity(int employeeID, LocalDate birthday, String sssNumber) {
-        String sql = """
-        SELECT 1
-          FROM Employee e
-          JOIN GovInformation g ON e.govID = g.govID
-         WHERE e.employeeID = ?
-           AND e.birthday = ?
-           AND g.sssNumberLookup = ?
-         LIMIT 1
-    """;
-
-        try (Connection conn = DBConnection.getConnection(); 
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setInt(1, employeeID);
-            ps.setDate(2, Date.valueOf(birthday));
-            ps.setBytes(3, PiiCryptoUtil.lookupHmac(sssNumber, SSS_CONTEXT));
-
-            try (ResultSet rs = ps.executeQuery()) {
-                return rs.next();
-            }
-
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-            return false;
-        }
-    }
 }

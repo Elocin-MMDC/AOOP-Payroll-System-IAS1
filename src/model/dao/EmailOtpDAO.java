@@ -162,6 +162,26 @@ public class EmailOtpDAO {
         }
     }
 
+    /**
+     * Atomically consumes a valid recovery token so it can be used for only one password reset.
+     * Returns false if the token is invalid, expired, or was already used.
+     */
+    public boolean consumeRecoveryToken(int userID, String rawToken) throws SQLException {
+        String sql = """
+            UPDATE emailrecoveryotp
+            SET recoveryTokenHash = NULL, recoveryTokenExpiresAt = NULL
+            WHERE userID = ? AND recoveryTokenHash = ? AND recoveryTokenExpiresAt > NOW()
+            """;
+        String tokenHash = OtpUtil.hashValue(rawToken);
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, userID);
+            stmt.setString(2, tokenHash);
+            return stmt.executeUpdate() == 1;
+        }
+    }
+
     private void incrementAttemptCount(int otpID) throws SQLException {
         String sql = "UPDATE emailrecoveryotp SET attemptCount = attemptCount + 1 WHERE otpID = ?";
         try (Connection conn = DBConnection.getConnection();

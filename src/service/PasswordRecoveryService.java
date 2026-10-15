@@ -92,7 +92,16 @@ public class PasswordRecoveryService {
                 throw new IllegalArgumentException("The recovery code is invalid or expired. Please request a new code.");
             }
 
+            // Check the password policy before consuming the token, so a rejected password
+            // does not force the user to request a new code
             AuthenticationService authenticationService = new AuthenticationService();
+            authenticationService.validateNewPassword(newPassword);
+
+            // Single use: the token is consumed atomically and cannot be reused before it expires
+            if (!otpDAO.consumeRecoveryToken(auditUserID, rawRecoveryToken)) {
+                throw new IllegalArgumentException("The recovery code is invalid or expired. Please request a new code.");
+            }
+
             authenticationService.completeEnforcedPasswordReset(auditUserID, newPassword);
             auditRecoveryEvent(auditUserID, "PASSWORD_RESET", "SUCCESS");
         } catch (Exception e) {
