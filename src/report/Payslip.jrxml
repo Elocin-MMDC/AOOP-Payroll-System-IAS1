@@ -10,7 +10,7 @@ OTktMjUzYmFhMGIxOWRiOw==]]>
 	<queryString language="SQL">
 		<![CDATA[
                     SELECT *
-                    FROM payrollsystem_db.payslipview
+                    FROM payslipview
                     WHERE payslipID = $P{payslipID}
                 ]]>
 	</queryString>

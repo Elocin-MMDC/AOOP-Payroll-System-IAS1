@@ -10,8 +10,13 @@ import java.sql.Connection;
 import java.sql.Date;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import model.dao.MonthlyPayrollSummaryReportViewDAO;
+import model.pojo.MonthlyPayrollSummaryReportView;
+import net.sf.jasperreports.engine.data.JRMapCollectionDataSource;
 import util.AccessControlUtil;
 
 public class ReportService {
@@ -44,10 +49,14 @@ public class ReportService {
             params.put("payStartDate", Date.valueOf(payStartDate));
             params.put("payEndDate", Date.valueOf(payEndDate));
 
-            JasperPrint jp = buildReport("/report/MonthlyPayrollSummary.jrxml", params);
+            // Fill from the DAO so government IDs are decrypted, instead of letting the
+            // template read the encrypted columns directly with its own SQL
+            JRDataSource rows = new JRMapCollectionDataSource(toReportRows(
+                    new MonthlyPayrollSummaryReportViewDAO().getWithinDateRange(payStartDate, payEndDate)));
+            JasperPrint jp = buildReport("/report/MonthlyPayrollSummary.jrxml", params, rows);
             view(jp, String.format("Payroll Summary – %s to %s", payStartDate, payEndDate));
-            
-        } catch (JRException | SQLException | IOException ex) {
+
+        } catch (JRException | IOException ex) {
             System.err.println("[ERROR] Failed to generate payroll summary:");
             System.err.println("Reason: " + ex.getMessage());
             
@@ -71,6 +80,46 @@ public class ReportService {
             JasperReport rpt = JasperCompileManager.compileReport(in);
             return JasperFillManager.fillReport(rpt, params, conn);
         }
+    }
+
+    // Builds and fills a report from a JRXML template using pre-loaded rows
+    private JasperPrint buildReport(String jrxmlPath, Map<String, Object> params, JRDataSource rows)
+            throws JRException, IOException {
+
+        try (InputStream in = getClass().getResourceAsStream(jrxmlPath)) {
+            if (in == null) {
+                throw new IOException("JRXML not found: " + jrxmlPath);
+            }
+
+            JasperReport rpt = JasperCompileManager.compileReport(in);
+            return JasperFillManager.fillReport(rpt, params, rows);
+        }
+    }
+
+    // Converts decrypted report records into rows keyed by the JRXML field names and types
+    private List<Map<String, ?>> toReportRows(List<MonthlyPayrollSummaryReportView> records) {
+        List<Map<String, ?>> rows = new ArrayList<>();
+        for (MonthlyPayrollSummaryReportView r : records) {
+            Map<String, Object> row = new HashMap<>();
+            row.put("payStartDate", Date.valueOf(r.getPayStartDate()));
+            row.put("payEndDate", Date.valueOf(r.getPayEndDate()));
+            row.put("employeeID", r.getEmployeeID());
+            row.put("employeeName", r.getEmployeeName());
+            row.put("position", r.getPosition());
+            row.put("department", r.getDepartment());
+            row.put("grossIncome", r.getGrossIncome());
+            row.put("sssNumber", r.getSssNumber());
+            row.put("sssContribution", r.getSssContribution());
+            row.put("philHealthNumber", r.getPhilHealthNumber());
+            row.put("philHealthContribution", r.getPhilHealthContribution());
+            row.put("pagIbigNumber", r.getPagIbigNumber());
+            row.put("pagIbigContribution", r.getPagIbigContribution());
+            row.put("tin", r.getTin());
+            row.put("withholdingTax", r.getWithholdingTax());
+            row.put("netIncome", r.getNetIncome());
+            rows.add(row);
+        }
+        return rows;
     }
 
     // Opens the JasperViewer for a filled report
