@@ -24,18 +24,8 @@ public class PasswordBreachChecker {
     private record PasswordSha1Hash(String prefix, String suffix) {
     }
 
-    // Thrown when the breach check cannot be completed (offline, timeout, or error response)
-    public static class BreachCheckUnavailableException extends RuntimeException {
-
-        public BreachCheckUnavailableException(String message, Throwable cause) {
-            super(message, cause);
-        }
-    }
-
     /**
      * Checks if a plaintext password has been exposed in data breaches.
-     * Fails closed: if the HIBP service cannot be reached, a BreachCheckUnavailableException
-     * is thrown so the password is not accepted unchecked.
      */
     public static boolean isPasswordCompromised(String plainPassword) {
         if (plainPassword == null || plainPassword.isEmpty()) {
@@ -48,9 +38,12 @@ public class PasswordBreachChecker {
             return isSuffixInResponse(responseBody, hash.suffix());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new BreachCheckUnavailableException("Password breach check was interrupted.", e);
+            return false;
         } catch (Exception e) {
-            throw new BreachCheckUnavailableException("Password breach check service is unavailable.", e);
+            // Fail-open: if the HIBP service is offline/unreachable, password changes still work
+            // without an internet connection; length rules are still enforced
+            System.err.println("HIBP breach check skipped (service unreachable): " + e.getClass().getSimpleName());
+            return false;
         }
     }
 
@@ -73,7 +66,7 @@ public class PasswordBreachChecker {
                 .build();
 
         HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
-        // An error response is not a valid suffix list; treat it as unavailable rather than "not breached"
+        // An error response is not a valid suffix list; treat it as the service being unavailable
         if (response.statusCode() != 200) {
             throw new IllegalStateException("HIBP returned HTTP " + response.statusCode());
         }
@@ -82,9 +75,8 @@ public class PasswordBreachChecker {
 
     // Check if the returned suffix list contains the password's suffix
     private static boolean isSuffixInResponse(String responseBody, String suffix) {
-        // HIBP always returns hundreds of suffixes per prefix; an empty body means the check did not work
         if (responseBody == null || responseBody.isEmpty()) {
-            throw new IllegalStateException("HIBP returned an empty response");
+            return false;
         }
 
         return responseBody.lines()

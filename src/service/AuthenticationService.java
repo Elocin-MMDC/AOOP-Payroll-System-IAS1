@@ -20,7 +20,6 @@ import model.pojo.AuditLog;
 import model.pojo.EmployeeView;
 import model.pojo.Role;
 import util.OtpUtil;
-import util.PasswordBreachChecker;
 import util.Session;
 
 public class AuthenticationService {
@@ -237,19 +236,14 @@ public class AuthenticationService {
     }
 
     // Password policy shared by every password-setting path: 8-64 characters (NIST SP 800-63B-4)
-    // and not found in known breaches. Fails closed when the breach check cannot be completed.
+    // and not found in known breaches (the breach check is skipped when HIBP cannot be reached).
     public void validateNewPassword(String newPassword) throws AuthenticationException {
         if (newPassword == null || !PasswordUtil.isPasswordLengthOkay(newPassword)) {
             throw new AuthenticationException("New password must be between 8 and 64 characters.");
         }
-        try {
-            if (PasswordUtil.isPasswordCompromised(newPassword)) {
-                throw new AuthenticationException(
-                        "The password you have chosen is known to be compromised. Please choose a different password.");
-            }
-        } catch (PasswordBreachChecker.BreachCheckUnavailableException ex) {
-            throw new AuthenticationException("We couldn't check this password against known data breaches right now. "
-                    + "Please check your internet connection and try again.");
+        if (PasswordUtil.isPasswordCompromised(newPassword)) {
+            throw new AuthenticationException(
+                    "The password you have chosen is known to be compromised. Please choose a different password.");
         }
     }
 

@@ -250,7 +250,7 @@ If the tool reports `FAIL`, nothing was changed (the whole run is rolled back). 
 
 > **HIBP integration:** The client hashes the candidate password using SHA-1 locally. Only the **first 5 characters** (prefix) of the hash are transmitted to the HIBP range API (`/range/{prefix}`). The remaining 35-character suffix is matched locally against the response list, ensuring the actual password or full hash is never exposed over the network. This is called the **k-Anonymity** model.
 
-> **Fails closed:** if HIBP cannot be reached (no internet, timeout, or an error response), the new password is **rejected** with "We couldn't check this password against known data breaches right now" instead of being accepted unchecked. Setting or resetting a password therefore requires an internet connection.
+> **Offline behavior:** if HIBP cannot be reached (no internet, timeout, or an error response), the breach check is skipped and the password is accepted if it meets the 8–64 character rule. Password changes therefore work without an internet connection.
 
 - All password-setting paths (Change Password, forced reset, email recovery) use one shared check, `AuthenticationService.validateNewPassword`, with the same 8–64 character message.
 - The old birthday/SSS password reset (screen and service methods) has been **removed**; Email OTP recovery is the only recovery path.
