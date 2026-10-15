@@ -161,7 +161,6 @@ public class AccountServiceTest {
     public void testResetPassword_success() throws Exception {
         int userId = employee.getUserID();
         UserAccount original = userDao.getById(userId);
-        String oldHash = original.getPassword();
         boolean oldMustChange = Boolean.TRUE.equals(original.getMustChangePassword());
         String[] temporaryPassword = new String[1];
 
@@ -178,7 +177,7 @@ public class AccountServiceTest {
             assertFalse(temporaryPassword[0].isEmpty());
 
             UserAccount after = userDao.getById(userId);
-            assertTrue(PasswordUtil.verify(temporaryPassword[0], after.getPassword()));
+            assertTrue(PasswordUtil.verifyUserPassword(temporaryPassword[0], after));
             assertTrue(Boolean.TRUE.equals(after.getMustChangePassword()));
             assertTrue(new AuditLogDAO().getAll().stream().anyMatch(log ->
                     log.getUserID() == itAdmin.getUserID()
@@ -186,10 +185,11 @@ public class AccountServiceTest {
                 && "UserAccount".equals(log.getEntityModified())
                 && log.getEntityID() == userId
                 && "mustChangePassword".equals(log.getAttributeModified())
-                && "false".equals(log.getOldValue())
+                && String.valueOf(oldMustChange).equals(log.getOldValue())
                 && "true".equals(log.getNewValue())));
         } finally {
-            userDao.resetPassword(userId, oldHash);
+            // Restore both the original hash and its salt
+            userDao.resetPassword(userId, original.getPassword(), original.getPasswordSalt());
             userDao.updateMustChangePasswordFlag(userId, oldMustChange);
         }
     }
@@ -206,7 +206,7 @@ public class AccountServiceTest {
 
         runAs(itAdmin, () -> {
             try {
-                boolean ok = service.updateAccount(userId, newUsername, newRoleName, newStatus);
+                boolean ok = service.updateAccount(userId, newUsername, before.getEmail(), newRoleName, newStatus);
                 System.out.println("   updateAccount() returned=" + ok);
                 assertTrue(ok);
             } catch (Exception e) {
@@ -224,7 +224,8 @@ public class AccountServiceTest {
         // Rollback to original values
         runAs(itAdmin, () -> {
             try {
-                service.updateAccount(userId, before.getUsername(), roleDao.getById(before.getRoleID()).getRoleName(), before.getAccountStatus());
+                service.updateAccount(userId, before.getUsername(), before.getEmail(),
+                        roleDao.getById(before.getRoleID()).getRoleName(), before.getAccountStatus());
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

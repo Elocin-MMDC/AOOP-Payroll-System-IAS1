@@ -68,52 +68,83 @@ public class AuthenticationServiceTest {
         }
     }
 
-    // Valid login sets session and returns correct user
+    // Stores a known password for the account using the real salted PBKDF2 hashing
+    private static void setKnownPassword(int userId, String plainPassword) {
+        UserAccount u = userDao.getById(userId);
+        PasswordUtil.applyHashedPassword(u, plainPassword);
+        assertTrue(userDao.resetPassword(userId, u.getPassword(), u.getPasswordSalt()));
+    }
+
+    // Restores the original password hash and salt captured before a test changed them
+    private static void restorePassword(UserAccount original) {
+        userDao.resetPassword(original.getUserID(), original.getPassword(), original.getPasswordSalt());
+    }
+
+    // Correct password only issues a pre-authentication challenge; no session until TOTP (Phase 4)
     @Test
     public void testLogin_success() throws Exception {
+        UserAccount original = userDao.getById(hrAdmin.getUserID());
         String tmpPw = "tmp-" + System.nanoTime();
-        String oldHash = hrAdmin.getPassword();
+        AuthenticationService.PreAuthChallenge challenge = null;
 
-        hrAdmin.setPassword(tmpPw);
-        userDao.update(hrAdmin);
+        try {
+            setKnownPassword(hrAdmin.getUserID(), tmpPw);
 
-        UserAccount logged = service.login(hrAdmin.getUsername(), tmpPw);
-        System.out.println("   Logged userID=" + logged.getUserID());
-        assertEquals(hrAdmin.getUserID(), logged.getUserID());
-        assertEquals(hrAdmin.getUserID(), Session.getCurrentUser().getUserID());
-        System.out.println("   ✔ Login & Session set");
+            challenge = service.login(hrAdmin.getUsername(), tmpPw);
+            assertNotNull(challenge.token());
+            assertEquals(hrAdmin.getUsername(), challenge.username());
+            assertEquals(!original.isMfaEnabled(), challenge.enrollmentRequired());
+            assertNull("Session must not exist before the TOTP step", Session.getCurrentUser());
+            System.out.println("   ✔ Password accepted, pre-auth challenge issued, no session yet");
+        } finally {
+            if (challenge != null) {
+                service.cancelLogin(challenge.token());
+            }
+            restorePassword(original);
+            Session.clear();
+        }
+    }
 
-        service.logout();
-
-        hrAdmin.setPassword(oldHash);
-        userDao.update(hrAdmin);
+    // A forged or cancelled pre-authentication token cannot complete a login
+    @Test
+    public void testCompleteLogin_rejectsInvalidToken() {
+        try {
+            service.completeLogin("forged-token", "123456");
+            fail("Forged token accepted");
+        } catch (AuthenticationException ex) {
+            assertTrue(ex.getMessage().contains("expired"));
+            assertNull(Session.getCurrentUser());
+            System.out.println("   ✔ Forged token rejected, no session created");
+        }
     }
 
     @Test
     public void testCompleteEnforcedPasswordReset_success() throws Exception {
         UserAccount original = userDao.getById(employee.getUserID());
-        String originalHash = original.getPassword();
         boolean originalMustChange = Boolean.TRUE.equals(original.getMustChangePassword());
         String temporaryPassword = "first-login-" + System.nanoTime();
-        String temporaryHash = PasswordUtil.sha256Hash(temporaryPassword);
         String newPassword = "changed-" + System.nanoTime();
         AuditLogDAO auditDao = new AuditLogDAO();
         int lastAuditIdBeforeReset = auditDao.getAll().stream()
                 .mapToInt(AuditLog::getAuditID)
                 .max()
                 .orElse(0);
+        AuthenticationService.PreAuthChallenge challenge = null;
 
         try {
-            assertTrue(userDao.updatePasswordAndClearMustChange(employee.getUserID(), temporaryHash));
+            setKnownPassword(employee.getUserID(), temporaryPassword);
             assertTrue(userDao.updateMustChangePasswordFlag(employee.getUserID(), true));
 
-            UserAccount loggedIn = service.login(employee.getUsername(), temporaryPassword);
-            assertTrue(Boolean.TRUE.equals(loggedIn.getMustChangePassword()));
+            challenge = service.login(employee.getUsername(), temporaryPassword);
+            assertNotNull(challenge.token());
+            assertTrue(Boolean.TRUE.equals(userDao.getById(employee.getUserID()).getMustChangePassword()));
 
+            // The forced reset runs after the TOTP step, when the session exists
+            Session.setCurrentUser(userDao.getById(employee.getUserID()));
             service.completeEnforcedPasswordReset(employee.getUserID(), newPassword);
 
             UserAccount updated = userDao.getById(employee.getUserID());
-            assertTrue(PasswordUtil.verify(newPassword, updated.getPassword()));
+            assertTrue(PasswordUtil.verifyUserPassword(newPassword, updated));
             assertFalse(Boolean.TRUE.equals(updated.getMustChangePassword()));
             assertFalse(Boolean.TRUE.equals(Session.getCurrentUser().getMustChangePassword()));
             assertTrue(auditDao.getAll().stream().anyMatch(log ->
@@ -126,7 +157,10 @@ public class AuthenticationServiceTest {
                 && "true".equals(log.getOldValue())
                 && "false".equals(log.getNewValue())));
         } finally {
-            userDao.resetPassword(employee.getUserID(), originalHash);
+            if (challenge != null) {
+                service.cancelLogin(challenge.token());
+            }
+            restorePassword(original);
             userDao.updateMustChangePasswordFlag(employee.getUserID(), originalMustChange);
             Session.clear();
         }
@@ -172,70 +206,25 @@ public class AuthenticationServiceTest {
     // Password is changed when correct current password is provided
     @Test
     public void testChangePassword_success() throws Exception {
-        String oldHash = employee.getPassword();
+        UserAccount original = userDao.getById(employee.getUserID());
         String currPw = "pw-" + System.currentTimeMillis();
         String newPw = "new-" + System.nanoTime();
-        employee.setPassword(currPw);
-        userDao.update(employee);
 
-        service.changePassword(employee.getUserID(), currPw, newPw);
-        String dbHash = userDao.getById(employee.getUserID()).getPassword();
-        assertTrue(PasswordUtil.verify(newPw, dbHash));
-        System.out.println("   ✔ changePassword updated hash");
+        try {
+            setKnownPassword(employee.getUserID(), currPw);
 
-        employee.setPassword(oldHash); // restore
-        userDao.update(employee);
+            service.changePassword(employee.getUserID(), currPw, newPw);
+            assertTrue(PasswordUtil.verifyUserPassword(newPw, userDao.getById(employee.getUserID())));
+            System.out.println("   ✔ changePassword updated hash");
+        } finally {
+            restorePassword(original);
+        }
     }
 
     // Incorrect current password should throw exception
     @Test(expected = AuthenticationException.class)
     public void testChangePassword_wrongCurrentThrows() throws Exception {
         service.changePassword(employee.getUserID(), "bad-current", "whatever");
-    }
-
-    // Verify identity should return true for correct details and false otherwise
-    @Test
-    public void testVerifyIdentity() {
-        Employee e = empDao.getById(employee.getEmployeeID());
-        GovInformation gi = govDao.getById(e.getGovID());
-
-        boolean ok = service.verifyIdentity(employee.getEmployeeID(),
-                e.getBirthday().toString(),
-                gi.getSssNumber());
-        boolean bad = service.verifyIdentity(employee.getEmployeeID(),
-                "1900-01-01",
-                "00-0000000-0");
-        System.out.println("   verifyIdentity ok=" + ok + " bad=" + bad);
-        assertTrue(ok);
-        assertFalse(bad);
-    }
-
-    // Successfully resets password when identity is valid
-    @Test
-    public void testResetPassword_success() throws Exception {
-        Employee e = empDao.getById(employee.getEmployeeID());
-        GovInformation gi = govDao.getById(e.getGovID());
-        String oldHash = employee.getPassword();
-        String newPw = "reset-" + System.nanoTime();
-
-        service.resetPassword(employee.getUsername(),
-                e.getBirthday().toString(),
-                gi.getSssNumber(),
-                newPw);
-        assertTrue(PasswordUtil.verify(newPw, userDao.getById(employee.getUserID()).getPassword()));
-        System.out.println("   ✔ resetPassword changed hash");
-
-        employee.setPassword(oldHash);
-        userDao.update(employee);
-    }
-
-    // Invalid identity should throw authentication exception
-    @Test(expected = AuthenticationException.class)
-    public void testResetPassword_badIdentityThrows() throws Exception {
-        service.resetPassword(employee.getUsername(),
-                "1900-12-31",
-                "00-0000000-0",
-                "whatever");
     }
 
     // Verifies user has authorized role from list
