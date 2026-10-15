@@ -1,5 +1,6 @@
 package gui.admin.it;
 
+import gui.login.MfaReauthDialog;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.FlowLayout;
@@ -14,6 +15,7 @@ import model.pojo.EmployeeView;
 import model.pojo.Role;
 import model.pojo.UserAccount;
 import service.AccountService;
+import service.MfaService;
 import util.UIUtil;
 
 public class ViewAccountPanel extends javax.swing.JPanel {
@@ -25,9 +27,48 @@ public class ViewAccountPanel extends javax.swing.JPanel {
         this.itPortal = itPortal;
         this.accountService = new AccountService();
         initComponents();
+        addResetMfaButton();
         UIUtil.setGreeting(jLabelHelloAdmin, "Admin");
         UIUtil.applyUsernameFormat(jTextFieldUsername);
         populateDropdowns();
+    }
+
+    // Added outside initComponents so the NetBeans form stays in sync
+    private void addResetMfaButton() {
+        JButton jButtonResetMfa = new JButton("Reset MFA");
+        jButtonResetMfa.setBackground(new java.awt.Color(0, 43, 89));
+        jButtonResetMfa.setFont(new java.awt.Font("Segoe UI", 1, 14));
+        jButtonResetMfa.setForeground(new java.awt.Color(255, 255, 255));
+        jButtonResetMfa.addActionListener(evt -> resetMfa());
+        jPanelViewAccountBox.add(jButtonResetMfa);
+        jButtonResetMfa.setBounds(690, 30, 170, 40);
+    }
+
+    // Lost-authenticator override: the IT Admin must reauthenticate with their own password and TOTP
+    private void resetMfa() {
+        int userID = Integer.parseInt(jTextFieldUserID.getText());
+
+        if (!UIUtil.showConfirmation(this, "Reset MFA for User ID " + userID + "? "
+                + "The user must set up a new authenticator app at their next login.")) {
+            return;
+        }
+
+        MfaReauthDialog.Result result = MfaReauthDialog.prompt(this, "Reset MFA for User ID " + userID + ".");
+        if (result == MfaReauthDialog.Result.LOCKED) {
+            MfaReauthDialog.endSession(this);
+            return;
+        }
+        if (result != MfaReauthDialog.Result.VERIFIED) {
+            return;
+        }
+
+        try {
+            new MfaService().adminResetMfa(userID);
+            itPortal.getSecurityPanel().loadAuditLogs();
+            UIUtil.showInfoMessage(this, "MFA has been reset for User ID " + userID + ".", "MFA Reset");
+        } catch (Exception ex) {
+            UIUtil.showErrorMessage(this, "Failed to reset MFA: " + ex.getMessage(), "System Error");
+        }
     }
     
     private void populateDropdowns() {

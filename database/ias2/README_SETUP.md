@@ -140,7 +140,7 @@ This phase enables required password changes for new accounts and accounts whose
 
 **Prerequisite:** complete the PII Encryption at Rest setup above and use the local `payrollsystem_db_ias2` database.
 
-### 1. Update the schema
+#### 1. Update the schema
 
 Run this script once against `payrollsystem_db_ias2`:
 
@@ -155,25 +155,25 @@ Existing rows keep the migration's initial value of FALSE/`0`; new account rows 
 **Note:** To require a password change for an existing account, an IT Admin must use **Reset Password** for that account.
 **Important:** Do not test the authentication flow until the Authentication **Phase 2 migration** outlined below is done.
 
-### Implementation details
+#### Implementation details
 
 - At login, `mustChangePassword` determines whether the user must choose a new password before entering the role portal. A successful change clears the flag and returns the user to the login screen.
 - Temporary passwords use Java `SecureRandom` to generate 12 random bytes, encoded as URL-safe Base64 without padding. They are shown to the IT Admin **once** for delivery. After logging in with a temporary credential, an immediate password reset is enforced.
 - The old dashboard check that hashes and compares the literal `temppassword` is currently commented out. Required changes are enforced by the login flag instead.
 
-### Key files
+#### Key files
 - `database/ias2/04_auth_phase1_mustChangePassword.sql`
 - `src/gui/login/EnforcedPasswordResetPanel.java`
 
 ----------------------------------------------------------------------
 
-## Phase 2: Salted Adaptive Password Hashing & Policy Hardening
+### Phase 2: Salted Adaptive Password Hashing & Policy Hardening
 
 This phase transitions credential storage from legacy single-round SHA-256 to salted, adaptive PBKDF2-HMAC-SHA256 hashing and enforces modern password validation rules.
 
 **Prerequisite:** complete the Phase 1 setup above and use the local `payrollsystem_db_ias2` database.
 
-### 1. Update the schema
+#### 1. Update the schema
 
 Run this script once against `payrollsystem_db_ias2`:
 
@@ -186,7 +186,7 @@ It marks legacy SHA-256 credentials with `mustChangePassword = TRUE` to force a 
 
 **Expected result:** the `UserAccount` table gains a new nullable `passwordSalt` column
 
-### 1. Secure the audit log
+#### 2. Secure the audit log
 
 Run this script once against `payrollsystem_db_ias2`:
 
@@ -198,7 +198,7 @@ This script overwrites existing password hashes in audit logs with `[REDACTED]` 
 
 **Expected result:** the password audits display `[REDACTED]` as the values; hashes never logged.
 
-### Implementation details
+#### Implementation details
 
 - Uses **PBKDF2-HMAC-SHA256** with **600,000 iterations** (in compliance with OWASP guidelines), a **256-bit derived key**, and a **16-byte random salt** (`SecureRandom`).
 - Keeps **backward compatibility** for legacy SHA-256 credentials until they are reset and rehashed.
@@ -211,15 +211,15 @@ This script overwrites existing password hashes in audit logs with `[REDACTED]` 
 > **HIBP integration:** The client hashes the candidate password using SHA-1 locally. Only the **first 5 characters** (prefix) of the hash are transmitted to the HIBP range API (`/range/{prefix}`). The remaining 35-character suffix is matched locally against the response list, ensuring the actual password or full hash is never exposed over the network. This is called the **k-Anonymity** model.
 
 
-### Key files
+#### Key files
 - `database/ias2/05_auth_phase2_passwordSalt.sql`
 - `database/ias2/06_auth_phase2_password_audit-redact.sql`
 - `src/util/PasswordCryptoUtil.java`
 - `src/util/PasswordBreachChecker.java`
 - `src/util/PasswordUtil.java`
 
-### Verify Login Flow (Phase 1 & 2)
-#### Test Password Reset Enforcement
+#### Verify Login Flow (Phase 1 & 2)
+##### Test Password Reset Enforcement
 1. Sign in as an IT Admin and open an account record.
 2. Select **Reset Password**, confirm, and copy the temporary password from the dialog. The same password cannot be retrieved after the dialog closes; another reset generates a replacement.
 3. Sign in as that account with the temporary password. The application should require a password change before opening the role portal.
@@ -227,7 +227,7 @@ This script overwrites existing password hashes in audit logs with `[REDACTED]` 
 5. Sign in with the new password. The account should now proceed to its role portal without another forced reset.
 6. Confirm the reset event appears in the audit log. The `mustChangePassword` flag should be FALSE/`0` after the new password is accepted.
 
-#### Test Password Policy Enforcement
+##### Test Password Policy Enforcement
 1. Sign in on any account.
 2. Navigate to the Change Password page in the Employee Portal.
 3. Submitting a password with < 8 characters triggers length error.
@@ -249,17 +249,75 @@ database/ias2/08_auth_phase3_audit_nullable_user.sql
 - Update user accounts with valid email addresses for testing. The application will send OTPs to those addresses. Email addresses can be updated by the IT Admin in the Accounts page.
 > Tip: You can use aliases with Gmail for testing. For example, if your Gmail address is `email@example.com`, you can use `email+aliashere@example.com` to receive emails in the same inbox.
 
-### Implementation Details
+#### Implementation Details
 - The OTP migration stores only OTP and recovery-token hashes. 
 - OTPs expire after 10 minutes, are consumed on successful verification, has limited verification attempts, and are limited to ten requests per account per hour (abundant limit for testing). 
 - Recovery tokens expire. 
 - Recovery requests, verification results, and reset results are written to `AuditLog`; event values never include email addresses, OTPs, recovery tokens, or passwords. 
 - The audit migration allows attempts for unknown email addresses to be recorded with a `NULL` user ID.
 
-### Key Files
+#### Key Files
 - `src/util/OtpUtil.java`
 - `src/service/PasswordRecoveryService.java`
 - `src/service/EmailService.java`
 - `src/model/dao/EmailOtpDAO.java`
 - `src/gui/login/OtpVerificationDialog.java`
 - `src/config/smtp.properties.example`
+
+----------------------------------------------------------------------
+
+### Phase 4: TOTP-Based MFA Enforcement
+
+This phase requires every account to verify a 6-digit code from an authenticator app (Google Authenticator, Microsoft Authenticator, etc.) after the password is accepted. Users without MFA enroll at their next login.
+
+**Prerequisite:** complete the PII Encryption at Rest setup (the TOTP secrets are encrypted with `MOTORPH_PII_AES_KEY`) and the Phase 1–3 migrations above.
+
+#### Update schema
+Run this script once against `payrollsystem_db_ias2` after the Phase 3 migrations:
+
+```text
+database/ias2/09_auth_phase4_totp_mfa.sql
+```
+
+**Expected result:** `UserAccount` gains an `mfaEnabled` column (FALSE/`0` for all existing rows), and a new `usertotp` table is created.
+
+#### Library
+ZXing core (`lib/zxing-core-3.5.3.jar`, from Maven Central) is used for QR code generation and is already referenced in `nbproject/project.properties`. No other setup is required.
+
+### Implementation Details
+- **Login flow:** username/password → existing lockout check → PBKDF2 verification → **temporary pre-authentication token** (256-bit random, 5-minute expiry, single use, held in memory only as a SHA-256 hash) → TOTP enrollment or verification → session created → `mustChangePassword` check → role portal. No session exists until the TOTP is accepted.
+- **Account lockout is reused:** a correct password no longer records `SUCCESS` by itself. Failed TOTP attempts are recorded as `FAILED` in `LoginLog` and share the existing 3-attempt / 30-minute lockout with failed passwords. `SUCCESS` is recorded only after the TOTP step.
+- **TOTP:** RFC 6238 (HMAC-SHA1, 30-second step, 6 digits, ±1 step allowed for clock drift). Secrets are 160-bit values from `SecureRandom`.
+- **Encryption:** secrets are stored in `usertotp.encryptedSecret` as AES-256-GCM `v1:` envelopes via `PiiCryptoUtil`. The AAD context includes the user ID, so a secret copied to another row will not decrypt.
+- **Replay prevention:** the last accepted time step is stored in `usertotp.lastUsedTimeStep`. A code is accepted only through an atomic `UPDATE ... WHERE lastUsedTimeStep < ?`, so the same (or an older) code can never be used twice.
+- **MFA reset (reauthentication required):**
+  - *Self-service:* Employee Portal → Profile → **Reset MFA**. Requires the current password **and** a current TOTP code. On success the authenticator is removed and the user is logged out; a new authenticator is enrolled at next login.
+  - *Lost device:* IT Admin → Accounts → view account → **Reset MFA**. The IT Admin must reauthenticate with **their own** password and TOTP.
+  - Failed reauthentication is denied, audited, and counts toward the lockout.
+- **Audit events** (`AuditLog`, `entityModified = 'MFA'`, event in `attributeModified`, outcome in `newValue`): `MFA_ENROLLMENT`, `MFA_LOGIN_VERIFICATION` (`SUCCESS`, `INVALID_CODE`, `REPLAY_REJECTED`, `LOCKED`, …), `MFA_REAUTHENTICATION`, `MFA_RESET`. Changes to `mfaEnabled` are also logged as `UserAccount` updates. Secrets and codes are never logged.
+
+### Verify MFA (Phase 4)
+#### Enrollment and login
+1. Sign in with any account. After the password, a QR code is shown. Scan it with an authenticator app and enter the 6-digit code.
+2. Confirm `mfaEnabled = 1` for the account and that `usertotp.encryptedSecret` starts with `v1:` (no readable secret).
+3. Log out and sign in again. Only the code prompt is shown (no QR code). A valid code opens the role portal.
+
+#### Replay and lockout
+1. Sign in, enter a valid code, then log out and immediately sign in again with **the same code** (within 30 seconds). It is rejected and `REPLAY_REJECTED` is audited.
+2. Enter three wrong codes after a correct password. The account is locked (same lockout as wrong passwords) and the user is returned to the login screen.
+
+#### Reset
+1. Profile → **Reset MFA**. Wrong password or code → denied and `MFA_REAUTHENTICATION` failure audited.
+2. Correct password and code → logged out; the next login shows a new QR code.
+3. Check the Security page audit log for the MFA events above.
+
+### Key Files
+- `database/ias2/09_auth_phase4_totp_mfa.sql`
+- `src/util/TotpUtil.java`
+- `src/util/QrCodeUtil.java`
+- `src/service/MfaService.java`
+- `src/model/dao/UserTotpDAO.java`
+- `src/model/pojo/UserTotp.java`
+- `src/gui/login/MfaVerificationPanel.java`
+- `src/gui/login/MfaReauthDialog.java`
+- `src/service/AuthenticationService.java` (two-step login: `login` → `completeLogin`)

@@ -154,10 +154,10 @@ public class LoginPanel extends javax.swing.JPanel {
             return;
         }
 
-        UserAccount user;
+        AuthenticationService.PreAuthChallenge challenge;
 
         try {
-            user = authService.login(username, password);
+            challenge = authService.login(username, password);
         } catch (Exception ex) {
             UIUtil.showErrorMessage(this, ex.getMessage(), "Login Failed");
             return;
@@ -166,15 +166,9 @@ public class LoginPanel extends javax.swing.JPanel {
         jTextFieldUsername.setText("");
         jPasswordFieldPassword.setText("");
 
-        Session.setCurrentUser(user);
-
-        if (user.getMustChangePassword() == true) {
-            UIUtil.showInfoMessage(this, "You are required to change your password before proceeding.", "Password Change Required");
-            loginPortal.showEnforcedPasswordReset();
-            return;
-        }
-
-        openRolePortal();
+        // Password verified: a valid TOTP is required before the session is created.
+        // The mustChangePassword check runs after TOTP verification (MfaVerificationPanel).
+        loginPortal.showMfaVerification(challenge);
     }// GEN-LAST:event_jButtonLoginActionPerformed
 
     void openRolePortal() {
