@@ -107,6 +107,20 @@ This:
 
 Run the application normally and verify that authorized Employee/HR screens show readable government IDs while raw database values remain encrypted.
 
+Also generate the **Monthly Payroll Summary** (Finance Admin) and a **payslip**. The summary report must show readable government IDs, and neither report should show `v1:` text.
+
+### 8. Remove the plaintext copy
+
+The original `payrollsystem_db` database still contains readable government IDs. Once steps 5–7 have succeeded, delete it so no plaintext copy stays on your machine:
+
+```sql
+DROP DATABASE IF EXISTS payrollsystem_db;
+```
+
+Also delete the temporary edited copy of `payrollsystem_db.sql` made in step 1. The app no longer reads `payrollsystem_db`: both report templates use the database configured in `db.properties`.
+
+> **Known limitation:** only the four government IDs (SSS, PhilHealth, TIN, Pag-IBIG) are encrypted. Other personal data (e.g. phone number, address, birthday) is still stored readable and is listed as future work.
+
 ### Implementation details
 
 - AES-256-GCM
@@ -198,10 +212,36 @@ This script overwrites existing password hashes in audit logs with `[REDACTED]` 
 
 **Expected result:** the password audits display `[REDACTED]` as the values; hashes never logged.
 
+#### 3. Convert legacy SHA-256 hashes (backfill)
+
+This converts every remaining unsalted SHA-256 password hash to salted PBKDF2, so no legacy hashes stay in the database. Users keep their current passwords, and accounts flagged for a forced reset stay flagged.
+
+**First take a backup** of the account table and confirm the file is not empty (PowerShell, from the project folder):
+
+```powershell
+mysqldump -u root -p --single-transaction --skip-triggers payrollsystem_db_ias2 useraccount > useraccount_backup.sql
+```
+
+Then compile (see Section A, step 4) and run:
+
+```text
+"C:\Program Files\NetBeans-22\netbeans\extide\ant\bin\ant.bat" -Dmain.class=util.LegacyPasswordBackfillTool -Dapplication.args=--backup-taken run
+```
+
+Expected output:
+
+```text
+PASS: Preflight complete. Legacy hashes found=<count>
+PASS: Stored values verified. Rows=<count>
+PASS: Backfill committed. Legacy hashes converted=<count>
+```
+
+If the tool reports `FAIL`, nothing was changed (the whole run is rolled back). Running it again later is safe; it only converts rows that still have a legacy hash. After you have confirmed that sign-in still works, **delete `useraccount_backup.sql`**: it contains the old SHA-256 hashes.
+
 #### Implementation details
 
 - Uses **PBKDF2-HMAC-SHA256** with **600,000 iterations** (in compliance with OWASP guidelines), a **256-bit derived key**, and a **16-byte random salt** (`SecureRandom`).
-- Keeps **backward compatibility** for legacy SHA-256 credentials until they are reset and rehashed.
+- **Legacy backfill (hash wrapping):** each legacy hash is stored as `PBKDF2(SHA-256 hash, new salt)`, and the salt is prefixed with `sha256:`. At sign-in, `PasswordUtil` computes `SHA-256(password)` first for these accounts, so existing passwords keep working without the original password ever being needed. The account's forced reset replaces it with a normal PBKDF2 hash.
 - Follows **NIST SP 800-63B-4, 2025** guidance for password handling:
 -- Enforces a minimum length of 8 characters (MFA is planned later).
 -- No password complexity rules
@@ -210,6 +250,11 @@ This script overwrites existing password hashes in audit logs with `[REDACTED]` 
 
 > **HIBP integration:** The client hashes the candidate password using SHA-1 locally. Only the **first 5 characters** (prefix) of the hash are transmitted to the HIBP range API (`/range/{prefix}`). The remaining 35-character suffix is matched locally against the response list, ensuring the actual password or full hash is never exposed over the network. This is called the **k-Anonymity** model.
 
+> **Fails closed:** if HIBP cannot be reached (no internet, timeout, or an error response), the new password is **rejected** with "We couldn't check this password against known data breaches right now" instead of being accepted unchecked. Setting or resetting a password therefore requires an internet connection.
+
+- All password-setting paths (Change Password, forced reset, email recovery) use one shared check, `AuthenticationService.validateNewPassword`, with the same 8–64 character message.
+- The old birthday/SSS password reset (screen and service methods) has been **removed**; Email OTP recovery is the only recovery path.
+
 
 #### Key files
 - `database/ias2/05_auth_phase2_passwordSalt.sql`
@@ -217,6 +262,7 @@ This script overwrites existing password hashes in audit logs with `[REDACTED]` 
 - `src/util/PasswordCryptoUtil.java`
 - `src/util/PasswordBreachChecker.java`
 - `src/util/PasswordUtil.java`
+- `src/util/LegacyPasswordBackfillTool.java`
 
 #### Verify Login Flow (Phase 1 & 2)
 ##### Test Password Reset Enforcement
@@ -251,8 +297,9 @@ database/ias2/08_auth_phase3_audit_nullable_user.sql
 
 #### Implementation Details
 - The OTP migration stores only OTP and recovery-token hashes. 
+- OTP emails are sent over SMTP with **STARTTLS required**: if the mail server does not offer TLS, sending fails instead of falling back to an unencrypted connection.
 - OTPs expire after 10 minutes, are consumed on successful verification, has limited verification attempts, and are limited to ten requests per account per hour (abundant limit for testing). 
-- Recovery tokens expire. 
+- Recovery tokens expire after 15 minutes and are **single use**: a successful reset consumes the token through an atomic database update, so it cannot be reused. The new password is checked against the policy first, so a rejected password does not use up the token.
 - Recovery requests, verification results, and reset results are written to `AuditLog`; event values never include email addresses, OTPs, recovery tokens, or passwords. 
 - The audit migration allows attempts for unknown email addresses to be recorded with a `NULL` user ID.
 
