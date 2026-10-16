@@ -1,12 +1,16 @@
 package gui.login;
 
 import service.PasswordRecoveryService;
+import model.dao.EmailOtpDAO.OtpRequestResult;
+import model.dao.EmailOtpDAO.OtpVerifyResult;
 import util.OtpUtil;
+
 import javax.swing.*;
 import java.awt.*;
 import java.util.function.Consumer;
 
 public class OtpVerificationDialog extends Dialog {
+
     private final PasswordRecoveryService recoveryService = new PasswordRecoveryService();
     private final Consumer<String> onVerified;
     private JLabel lblMaskedEmail;
@@ -16,6 +20,8 @@ public class OtpVerificationDialog extends Dialog {
     private JButton btnCancel;
     private LoginPortal loginPortal;
     private String rawEmail;
+    private Timer cooldownTimer;
+    private boolean isLockedOut = false;
 
     public OtpVerificationDialog(Frame parent, String email) {
         this(parent, email, null);
@@ -34,6 +40,8 @@ public class OtpVerificationDialog extends Dialog {
         this.setSize(480, 320);
         this.setLocationRelativeTo(parent);
         this.setResizable(false);
+
+        startResendCooldownUI(30); // Start initial 30s cooldown when opened
     }
 
     private void initComponents() {
@@ -45,7 +53,6 @@ public class OtpVerificationDialog extends Dialog {
         gbc.anchor = GridBagConstraints.WEST;
         gbc.weightx = 1.0;
 
-        // Title Header
         JLabel lblTitle = new JLabel("Enter One-Time Password");
         lblTitle.setFont(new Font("SansSerif", Font.BOLD, 16));
         gbc.gridx = 0;
@@ -53,7 +60,6 @@ public class OtpVerificationDialog extends Dialog {
         gbc.gridwidth = 3;
         mainPanel.add(lblTitle, gbc);
 
-        // Masked Email Notice
         lblMaskedEmail = new JLabel("OTP sent to: " + OtpUtil.maskEmail(rawEmail));
         lblMaskedEmail.setFont(new Font("SansSerif", Font.PLAIN, 12));
         lblMaskedEmail.setForeground(Color.GRAY);
@@ -62,7 +68,6 @@ public class OtpVerificationDialog extends Dialog {
         gbc.gridwidth = 3;
         mainPanel.add(lblMaskedEmail, gbc);
 
-        // OTP Label
         JLabel lblOtp = new JLabel("6-Digit Code:");
         gbc.gridx = 0;
         gbc.gridy = 2;
@@ -70,7 +75,6 @@ public class OtpVerificationDialog extends Dialog {
         gbc.weightx = 0;
         mainPanel.add(lblOtp, gbc);
 
-        // OTP Input Field
         txtOtpCode = new JTextField(12);
         txtOtpCode.setFont(new Font("Monospaced", Font.BOLD, 16));
         gbc.gridx = 1;
@@ -79,7 +83,6 @@ public class OtpVerificationDialog extends Dialog {
         gbc.insets = new Insets(8, 8, 8, 8);
         mainPanel.add(txtOtpCode, gbc);
 
-        // Resend Button
         btnResend = new JButton("Resend OTP");
         btnResend.addActionListener(e -> handleResendOTP());
         gbc.gridx = 2;
@@ -88,13 +91,11 @@ public class OtpVerificationDialog extends Dialog {
         gbc.insets = new Insets(8, 8, 8, 0);
         mainPanel.add(btnResend, gbc);
 
-        // Spacing
         gbc.gridy = 3;
         gbc.gridwidth = 3;
         gbc.insets = new Insets(10, 0, 10, 0);
         mainPanel.add(Box.createVerticalStrut(10), gbc);
 
-        // Button Panel
         JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 10, 0));
         btnVerify = new JButton("Verify");
         btnVerify.addActionListener(e -> handleVerifyOTP());
@@ -114,45 +115,94 @@ public class OtpVerificationDialog extends Dialog {
     }
 
     private void handleVerifyOTP() {
-        String inputOtp = txtOtpCode.getText().trim();
 
-        if (inputOtp.isEmpty() || inputOtp.length() != 6) {
-            JOptionPane.showMessageDialog(this, 
-                "Please enter a valid 6-digit OTP code.", 
-                "Invalid Input", JOptionPane.WARNING_MESSAGE);
+        if (isLockedOut) {
+            JOptionPane.showMessageDialog(this,
+                    "Too many failed attempts.\nPlease click 'Resend OTP' to request a new code.", "OTP Invalidated",
+                    JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        // Verify OTP with backend and retrieve recovery token
-        String recoveryToken = recoveryService.verifyOTP(rawEmail, inputOtp);
+        String inputOtp = txtOtpCode.getText().trim();
 
-        if (recoveryToken != null) {
-            if (onVerified != null) {
+        if (inputOtp.isEmpty() || inputOtp.length() != 6) {
+            JOptionPane.showMessageDialog(this,
+                    "Please enter a valid 6-digit OTP code.",
+                    "Invalid Input", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        OtpVerifyResult result = recoveryService.verifyOTP(rawEmail, inputOtp);
+
+        switch (result.getStatus()) {
+            case SUCCESS -> {
+                if (cooldownTimer != null)
+                    cooldownTimer.stop();
+                if (onVerified != null) {
+                    this.dispose();
+                    onVerified.accept(result.getRecoveryToken());
+                    return;
+                }
+                JOptionPane.showMessageDialog(this,
+                        "OTP verified successfully. Please choose your new password.",
+                        "Success", JOptionPane.INFORMATION_MESSAGE);
                 this.dispose();
-                onVerified.accept(recoveryToken);
-                return;
+                loginPortal.showRecoveryPasswordReset(rawEmail, result.getRecoveryToken());
             }
-
-            JOptionPane.showMessageDialog(this, 
-                "OTP verified successfully. Please choose your new password.", 
-                "Success", JOptionPane.INFORMATION_MESSAGE);
-
-            this.dispose(); // Close OTP Dialog
-            loginPortal.showRecoveryPasswordReset(rawEmail, recoveryToken);
-
-        } else {
-            JOptionPane.showMessageDialog(this, 
-                "Invalid or expired OTP. Please try again or request a new code.", 
-                "Verification Failed", JOptionPane.ERROR_MESSAGE);
+            case MAX_ATTEMPTS_EXCEEDED -> {
+                isLockedOut = true;
+                JOptionPane.showMessageDialog(this,
+                        "Too many failed attempts.\nPlease click 'Resend OTP' to request a new code.",
+                        "OTP Invalidated", JOptionPane.ERROR_MESSAGE);
+            }
+            case INVALID_OR_EXPIRED -> {
+                JOptionPane.showMessageDialog(this,
+                        "Invalid or expired OTP. Please check the code and try again.",
+                        "Verification Failed", JOptionPane.ERROR_MESSAGE);
+            }
         }
     }
 
     private void handleResendOTP() {
-        boolean sent = recoveryService.requestPasswordResetOTP(rawEmail);
-        if (sent) {
-            JOptionPane.showMessageDialog(this, 
-                "A new OTP code has been sent to your email address.", 
-                "OTP Resent", JOptionPane.INFORMATION_MESSAGE);
+        OtpRequestResult result = recoveryService.requestPasswordResetOTP(rawEmail);
+
+        if (result == OtpRequestResult.BURST_COOLDOWN) {
+            JOptionPane.showMessageDialog(this,
+                    "Please wait before requesting another code.",
+                    "Resend Limit", JOptionPane.WARNING_MESSAGE);
+            return;
+        } else if (result == OtpRequestResult.RATE_LIMITED) {
+            JOptionPane.showMessageDialog(this,
+                    "Hourly request limit reached (10 per hour). Please try again later.",
+                    "Rate Limit Reached", JOptionPane.WARNING_MESSAGE);
+            return;
         }
+
+        isLockedOut = false;
+        startResendCooldownUI(30);
+        JOptionPane.showMessageDialog(this,
+                "A new OTP code has been sent to your email address.",
+                "OTP Resent", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private void startResendCooldownUI(int seconds) {
+        btnResend.setEnabled(false);
+        final int[] secondsRemaining = { seconds };
+
+        if (cooldownTimer != null && cooldownTimer.isRunning()) {
+            cooldownTimer.stop();
+        }
+
+        cooldownTimer = new Timer(1000, e -> {
+            secondsRemaining[0]--;
+            if (secondsRemaining[0] > 0) {
+                btnResend.setText("Resend (" + secondsRemaining[0] + "s)");
+            } else {
+                ((Timer) e.getSource()).stop();
+                btnResend.setText("Resend OTP");
+                btnResend.setEnabled(true);
+            }
+        });
+        cooldownTimer.start();
     }
 }

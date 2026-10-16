@@ -6,11 +6,12 @@ import service.AuthenticationService;
 import service.PasswordRecoveryService;
 import gui.login.OtpVerificationDialog;
 import model.pojo.UserAccount;
+import model.dao.EmailOtpDAO;
 import util.Session;
 import util.UIUtil;
 
 public class ChangePasswordPanel extends javax.swing.JPanel {
-    
+
     private final EmployeePortal employeePortal;
 
     public ChangePasswordPanel(EmployeePortal employeePortal) {
@@ -20,7 +21,8 @@ public class ChangePasswordPanel extends javax.swing.JPanel {
     }
 
     @SuppressWarnings("unchecked")
-    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    // <editor-fold defaultstate="collapsed" desc="Generated
+    // Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
         jPanel1 = new javax.swing.JPanel();
@@ -134,7 +136,7 @@ public class ChangePasswordPanel extends javax.swing.JPanel {
         add(jPanel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, -1, -1));
     }// </editor-fold>//GEN-END:initComponents
 
-    private void jButtonSubmitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonSubmitActionPerformed
+    private void jButtonSubmitActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jButtonSubmitActionPerformed
         String currentPassword = new String(jPasswordFieldCurrentPassword.getPassword());
         String newPassword = new String(jPasswordFieldNewPassword.getPassword()).trim();
         String confirmNewPassword = new String(jPasswordFieldCofirmNewPassword.getPassword()).trim();
@@ -151,31 +153,41 @@ public class ChangePasswordPanel extends javax.swing.JPanel {
 
         UserAccount currentUser = Session.getCurrentUser();
         if (currentUser == null || currentUser.getEmail() == null || currentUser.getEmail().trim().isEmpty()) {
-            UIUtil.showErrorMessage(this, "A verified email address is required to change your password. Please contact your administrator.",
+            UIUtil.showErrorMessage(this,
+                    "A verified email address is required to change your password. Please contact your administrator.",
                     "Change Password Failed");
             return;
         }
 
-
         try {
+            AuthenticationService authenticationService = new AuthenticationService(); authenticationService.validateNewPassword(newPassword);
+            
             String email = currentUser.getEmail().trim();
-            boolean otpRequested = new PasswordRecoveryService().requestPasswordResetOTP(email);
-            if (!otpRequested) {
+
+            EmailOtpDAO.OtpRequestResult result = new PasswordRecoveryService().requestPasswordResetOTP(email);
+
+            if (result == EmailOtpDAO.OtpRequestResult.CREATED) {
+                UIUtil.showInfoMessage(this,
+                        "A verification code has been sent to your email address. Please check your email to complete the password change process.",
+                        "Change Password");
+
+                int userId = currentUser.getUserID();
+                OtpVerificationDialog otpDialog = new OtpVerificationDialog(employeePortal, email,
+                        recoveryToken -> completePasswordChange(userId, currentPassword, newPassword, recoveryToken));
+                otpDialog.setVisible(true);
+            } else if (result == EmailOtpDAO.OtpRequestResult.BURST_COOLDOWN) {
+                UIUtil.showWarningMessage(this, "Please wait before requesting another code.", "Change Password");
+            } else if (result == EmailOtpDAO.OtpRequestResult.RATE_LIMITED) {
+                UIUtil.showWarningMessage(this, "Hourly request limit reached (10 per hour). Please try again later.",
+                        "Rate Limit Reached");
+            } else {
                 UIUtil.showErrorMessage(this, "Unable to send a verification code. Please try again.",
                         "Change Password Failed");
-                return;
             }
-
-            UIUtil.showInfoMessage(this, "A verification code has been sent to your email address. Please check your email to complete the password change process.", "Change Password");
-
-            int userId = currentUser.getUserID();
-            OtpVerificationDialog otpDialog = new OtpVerificationDialog(employeePortal, email,
-                    recoveryToken -> completePasswordChange(userId, currentPassword, newPassword, recoveryToken));
-            otpDialog.setVisible(true);
         } catch (Exception ex) {
             UIUtil.showErrorMessage(this, ex.getMessage(), "Change Password Failed");
         }
-    }//GEN-LAST:event_jButtonSubmitActionPerformed
+    }// GEN-LAST:event_jButtonSubmitActionPerformed
 
     private void completePasswordChange(int userId, String currentPassword, String newPassword, String recoveryToken) {
         if (recoveryToken == null) {
@@ -193,23 +205,23 @@ public class ChangePasswordPanel extends javax.swing.JPanel {
         }
     }
 
-    private void jLabelBackMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabelBackMouseClicked
+    private void jLabelBackMouseClicked(java.awt.event.MouseEvent evt) {// GEN-FIRST:event_jLabelBackMouseClicked
         // TODO add your handling code here:
         CardLayout cardLayout = (CardLayout) employeePortal.getPanelParentCard().getLayout();
         cardLayout.show(employeePortal.getPanelParentCard(), "Profile");
-    }//GEN-LAST:event_jLabelBackMouseClicked
+    }// GEN-LAST:event_jLabelBackMouseClicked
 
-    private void jPasswordFieldCurrentPasswordActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jPasswordFieldCurrentPasswordActionPerformed
+    private void jPasswordFieldCurrentPasswordActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jPasswordFieldCurrentPasswordActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jPasswordFieldCurrentPasswordActionPerformed
+    }// GEN-LAST:event_jPasswordFieldCurrentPasswordActionPerformed
 
-    private void jPasswordFieldCofirmNewPasswordActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jPasswordFieldCofirmNewPasswordActionPerformed
+    private void jPasswordFieldCofirmNewPasswordActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jPasswordFieldCofirmNewPasswordActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jPasswordFieldCofirmNewPasswordActionPerformed
+    }// GEN-LAST:event_jPasswordFieldCofirmNewPasswordActionPerformed
 
-    private void jPasswordFieldNewPasswordActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jPasswordFieldNewPasswordActionPerformed
+    private void jPasswordFieldNewPasswordActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jPasswordFieldNewPasswordActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jPasswordFieldNewPasswordActionPerformed
+    }// GEN-LAST:event_jPasswordFieldNewPasswordActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButtonSubmit;
