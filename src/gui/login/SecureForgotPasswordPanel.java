@@ -81,7 +81,7 @@ public class SecureForgotPasswordPanel extends JPanel {
                 UIUtil.showWarningMessage(this, "Hourly request limit reached (10 per hour). Please try again later.",
                         "Rate Limit Reached");
             } else {
-                UIUtil.showErrorMessage(this, "Unable to send reset email at this time.", "Reset Password Failed");
+                UIUtil.showErrorMessage(this, "Unable to send a password reset code at this time. Please contact your administrator or try again later.", "Reset Password Failed");
             }
         } catch (Exception ex) {
             UIUtil.showErrorMessage(this, ex.getMessage(), "Reset Password Failed");

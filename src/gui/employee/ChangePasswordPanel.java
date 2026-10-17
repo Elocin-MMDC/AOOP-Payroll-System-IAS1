@@ -181,7 +181,7 @@ public class ChangePasswordPanel extends javax.swing.JPanel {
                 UIUtil.showWarningMessage(this, "Hourly request limit reached (10 per hour). Please try again later.",
                         "Rate Limit Reached");
             } else {
-                UIUtil.showErrorMessage(this, "Unable to send a verification code. Please try again.",
+                UIUtil.showErrorMessage(this, "Unable to send a password reset code at this time. Please contact your administrator or try again later.",
                         "Change Password Failed");
             }
         } catch (Exception ex) {

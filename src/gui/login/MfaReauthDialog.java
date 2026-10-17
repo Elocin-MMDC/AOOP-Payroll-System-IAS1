@@ -17,7 +17,7 @@ import util.UIUtil;
 
 /**
  * Prompts the logged-in user for their password and current TOTP code before an MFA
- * change. Used for both self-service MFA reset and the IT Admin lost-device override.
+ * change. Used for the self-service MFA reset, the IT Admin lost-device override, and the IT Admin password reset override.
  */
 public final class MfaReauthDialog {
 

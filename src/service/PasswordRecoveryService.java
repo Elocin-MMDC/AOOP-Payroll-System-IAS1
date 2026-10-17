@@ -51,7 +51,7 @@ public class PasswordRecoveryService {
         } catch (Exception e) {
             auditRecoveryEvent(auditUserID, "OTP_REQUEST", "FAILED");
             e.printStackTrace();
-            return OtpRequestResult.RATE_LIMITED;
+            return OtpRequestResult.FAILED;
         }
     }
 

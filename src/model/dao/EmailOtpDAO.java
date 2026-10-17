@@ -9,7 +9,8 @@ public class EmailOtpDAO {
     public enum OtpRequestResult {
         CREATED,
         RATE_LIMITED,
-        BURST_COOLDOWN
+        BURST_COOLDOWN,
+        FAILED
     }
 
     public enum OtpVerifyStatus {
