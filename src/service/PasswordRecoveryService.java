@@ -1,14 +1,14 @@
-
 package service;
 
 import model.dao.EmailOtpDAO;
+import model.dao.EmailOtpDAO.OtpRequestResult;
+import model.dao.EmailOtpDAO.OtpVerifyResult;
+import model.dao.EmailOtpDAO.OtpVerifyStatus;
 import model.dao.AuditLogDAO;
 import model.dao.UserAccountDAO;
 import model.pojo.AuditLog;
 import model.pojo.UserAccount;
 import util.OtpUtil;
-import util.PasswordUtil;
-import service.AuthenticationService;
 import java.time.LocalDateTime;
 
 public class PasswordRecoveryService {
@@ -21,63 +21,71 @@ public class PasswordRecoveryService {
     /**
      * Step 1: Request OTP for a given user email.
      */
-    public boolean requestPasswordResetOTP(String email) {
+    public OtpRequestResult requestPasswordResetOTP(String email) {
         int auditUserID = 0;
-        String outcome = "FAILED";
         try {
             UserAccount user = userAccountDao.findByEmail(email);
             if (user == null) {
                 auditRecoveryEvent(0, "OTP_REQUEST", "ACCOUNT_NOT_FOUND");
-                return true; 
+                return OtpRequestResult.CREATED; // Prevent email enumeration
             }
 
             auditUserID = user.getUserID();
             String otpCode = OtpUtil.generate6DigitOTP();
-            EmailOtpDAO.OtpRequestResult result = otpDAO.createOTP(user.getUserID(), otpCode, 10,
+            
+            OtpRequestResult result = otpDAO.createOTP(user.getUserID(), otpCode, 10,
                     OTP_REQUEST_LIMIT, OTP_REQUEST_WINDOW_MINUTES);
-            if (result == EmailOtpDAO.OtpRequestResult.RATE_LIMITED) {
+
+            if (result == OtpRequestResult.RATE_LIMITED) {
                 auditRecoveryEvent(auditUserID, "OTP_REQUEST", "RATE_LIMITED");
-                return true;
+                return result;
+            } else if (result == OtpRequestResult.BURST_COOLDOWN) {
+                auditRecoveryEvent(auditUserID, "OTP_REQUEST", "BURST_COOLDOWN");
+                return result;
             }
 
             EmailService.sendOTPEmail(email, otpCode);
-            outcome = "SENT";
-            auditRecoveryEvent(auditUserID, "OTP_REQUEST", outcome);
-            return true;
+            auditRecoveryEvent(auditUserID, "OTP_REQUEST", "SENT");
+            return OtpRequestResult.CREATED;
+
         } catch (Exception e) {
-            auditRecoveryEvent(auditUserID, "OTP_REQUEST", outcome);
+            auditRecoveryEvent(auditUserID, "OTP_REQUEST", "FAILED");
             e.printStackTrace();
-            return false;
+            return OtpRequestResult.FAILED;
         }
     }
 
     /**
-     * Step 2: Verify submitted 6-digit OTP and issue a single-use recovery token.
+     * Step 2: Verify submitted OTP and audit results.
      */
-    public String verifyOTP(String email, String plainOtp) {
+    public OtpVerifyResult verifyOTP(String email, String plainOtp) {
         int auditUserID = 0;
         try {
             UserAccount user = userAccountDao.findByEmail(email);
             if (user == null) {
                 auditRecoveryEvent(0, "OTP_VERIFICATION", "ACCOUNT_NOT_FOUND");
-                return null;
+                return new OtpVerifyResult(OtpVerifyStatus.INVALID_OR_EXPIRED, null);
             }
 
             auditUserID = user.getUserID();
-            String recoveryToken = otpDAO.verifyAndConsumeOTP(auditUserID, plainOtp);
-            auditRecoveryEvent(auditUserID, "OTP_VERIFICATION",
-                    recoveryToken == null ? "FAILED" : "SUCCESS");
-            return recoveryToken;
+            OtpVerifyResult result = otpDAO.verifyAndConsumeOTP(auditUserID, plainOtp);
+
+            String outcome = switch (result.getStatus()) {
+                case SUCCESS -> "SUCCESS";
+                case MAX_ATTEMPTS_EXCEEDED -> "LOCKED_OUT";
+                case INVALID_OR_EXPIRED -> "FAILED";
+            };
+
+            auditRecoveryEvent(auditUserID, "OTP_VERIFICATION", outcome);
+            return result;
+
         } catch (Exception e) {
             auditRecoveryEvent(auditUserID, "OTP_VERIFICATION", "ERROR");
             e.printStackTrace();
-            return null;
+            return new OtpVerifyResult(OtpVerifyStatus.INVALID_OR_EXPIRED, null);
         }
     }
 
-    /**
-     * Step 3: Complete password reset.
-     */
     public void resetPasswordWithToken(String email, String rawRecoveryToken, String newPassword) throws Exception {
         int auditUserID = 0;
         try {
@@ -92,12 +100,9 @@ public class PasswordRecoveryService {
                 throw new IllegalArgumentException("The recovery code is invalid or expired. Please request a new code.");
             }
 
-            // Check the password policy before consuming the token, so a rejected password
-            // does not force the user to request a new code
             AuthenticationService authenticationService = new AuthenticationService();
             authenticationService.validateNewPassword(newPassword);
 
-            // Single use: the token is consumed atomically and cannot be reused before it expires
             if (!otpDAO.consumeRecoveryToken(auditUserID, rawRecoveryToken)) {
                 throw new IllegalArgumentException("The recovery code is invalid or expired. Please request a new code.");
             }

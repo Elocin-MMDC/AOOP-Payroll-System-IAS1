@@ -2,26 +2,57 @@ package model.dao;
 
 import db.DBConnection;
 import util.OtpUtil;
-
 import java.sql.*;
 
 public class EmailOtpDAO {
 
     public enum OtpRequestResult {
         CREATED,
-        RATE_LIMITED
+        RATE_LIMITED,
+        BURST_COOLDOWN,
+        FAILED
+    }
+
+    public enum OtpVerifyStatus {
+        SUCCESS,
+        INVALID_OR_EXPIRED,
+        MAX_ATTEMPTS_EXCEEDED
+    }
+
+    public static class OtpVerifyResult {
+        private final OtpVerifyStatus status;
+        private final String recoveryToken;
+
+        public OtpVerifyResult(OtpVerifyStatus status, String recoveryToken) {
+            this.status = status;
+            this.recoveryToken = recoveryToken;
+        }
+
+        public OtpVerifyStatus getStatus() { return status; }
+        public String getRecoveryToken() { return recoveryToken; }
     }
 
     /**
      * Invalidates any existing unconsumed OTPs for the user, then inserts a new hashed OTP.
+     * Enforces both a 30-second burst cooldown and a 60-minute window request limit.
      */
     public OtpRequestResult createOTP(int userID, String plainOtp, int expirationMinutes,
             int maxRequests, int windowMinutes) throws SQLException {
+        
         String lockUserSql = "SELECT userID FROM UserAccount WHERE userID = ? FOR UPDATE";
+        
+        // Check for 30-second burst cooldown
+        String countBurstSql = """
+            SELECT COUNT(*) FROM emailrecoveryotp
+            WHERE userID = ? AND createdAt >= DATE_SUB(NOW(), INTERVAL 30 SECOND)
+            """;
+
+        // Check for 60-minute hourly limit
         String countRecentSql = """
             SELECT COUNT(*) FROM emailrecoveryotp
             WHERE userID = ? AND createdAt >= DATE_SUB(NOW(), INTERVAL ? MINUTE)
             """;
+
         String invalidateSql = "UPDATE emailrecoveryotp SET isConsumed = 1 WHERE userID = ? AND isConsumed = 0";
         String insertSql = """
             INSERT INTO emailrecoveryotp (userID, otpHash, expiresAt)
@@ -33,6 +64,7 @@ public class EmailOtpDAO {
         try (Connection conn = DBConnection.getConnection()) {
             conn.setAutoCommit(false);
             try {
+                // Lock user row
                 try (PreparedStatement lockStmt = conn.prepareStatement(lockUserSql)) {
                     lockStmt.setInt(1, userID);
                     try (ResultSet userResult = lockStmt.executeQuery()) {
@@ -42,6 +74,18 @@ public class EmailOtpDAO {
                     }
                 }
 
+                // 1. Enforce 30-second burst cooldown
+                try (PreparedStatement burstStmt = conn.prepareStatement(countBurstSql)) {
+                    burstStmt.setInt(1, userID);
+                    try (ResultSet burstRs = burstStmt.executeQuery()) {
+                        if (burstRs.next() && burstRs.getInt(1) > 0) {
+                            conn.commit();
+                            return OtpRequestResult.BURST_COOLDOWN;
+                        }
+                    }
+                }
+
+                // 2. Enforce 60-minute hourly limit
                 try (PreparedStatement countStmt = conn.prepareStatement(countRecentSql)) {
                     countStmt.setInt(1, userID);
                     countStmt.setInt(2, windowMinutes);
@@ -53,7 +97,7 @@ public class EmailOtpDAO {
                     }
                 }
 
-                // Invalidate older OTPs
+                // Invalidate older active OTPs
                 try (PreparedStatement invStmt = conn.prepareStatement(invalidateSql)) {
                     invStmt.setInt(1, userID);
                     invStmt.executeUpdate();
@@ -77,9 +121,9 @@ public class EmailOtpDAO {
     }
 
     /**
-     * Atomically verifies and consumes an OTP, returning a short-lived recovery token if valid.
+     * Verifies and consumes an OTP, distinguishing between invalid codes and attempt lockouts.
      */
-    public String verifyAndConsumeOTP(int userID, String plainOtp) throws SQLException {
+    public OtpVerifyResult verifyAndConsumeOTP(int userID, String plainOtp) throws SQLException {
         String selectSql = """
             SELECT otpID, attemptCount 
             FROM emailrecoveryotp 
@@ -95,16 +139,15 @@ public class EmailOtpDAO {
                 ResultSet rs = selectStmt.executeQuery();
 
                 if (!rs.next()) {
-                    return null; // No valid active OTP found
+                    return new OtpVerifyResult(OtpVerifyStatus.INVALID_OR_EXPIRED, null);
                 }
 
                 int otpID = rs.getInt("otpID");
                 int attemptCount = rs.getInt("attemptCount");
 
                 if (attemptCount >= 3) {
-                    // Lock out this OTP due to too many failed attempts
                     invalidateOTP(otpID);
-                    return null;
+                    return new OtpVerifyResult(OtpVerifyStatus.MAX_ATTEMPTS_EXCEEDED, null);
                 }
 
                 // Verify hash match
@@ -115,13 +158,17 @@ public class EmailOtpDAO {
                     ResultSet hashRs = hashStmt.executeQuery();
 
                     if (!hashRs.next()) {
-                        // Increment failed attempts
                         incrementAttemptCount(otpID);
-                        return null;
+                        int newCount = attemptCount + 1;
+                        if (newCount >= 3) {
+                            invalidateOTP(otpID);
+                            return new OtpVerifyResult(OtpVerifyStatus.MAX_ATTEMPTS_EXCEEDED, null);
+                        }
+                        return new OtpVerifyResult(OtpVerifyStatus.INVALID_OR_EXPIRED, null);
                     }
                 }
 
-                // Atomic consumption and short-lived recovery token generation (15 min validity)
+                // Consume OTP and generate short-lived recovery token (15 min validity)
                 String rawRecoveryToken = OtpUtil.generateRecoveryToken();
                 String tokenHash = OtpUtil.hashValue(rawRecoveryToken);
 
@@ -137,15 +184,14 @@ public class EmailOtpDAO {
                     consumeStmt.setInt(2, otpID);
                     int updated = consumeStmt.executeUpdate();
 
-                    return (updated > 0) ? rawRecoveryToken : null;
+                    return (updated > 0) 
+                        ? new OtpVerifyResult(OtpVerifyStatus.SUCCESS, rawRecoveryToken)
+                        : new OtpVerifyResult(OtpVerifyStatus.INVALID_OR_EXPIRED, null);
                 }
             }
         }
     }
 
-    /**
-     * Checks if a recovery token is valid and unexpired before permitting a password reset.
-     */
     public boolean validateRecoveryToken(int userID, String rawToken) throws SQLException {
         String sql = """
             SELECT otpID FROM emailrecoveryotp 
@@ -162,10 +208,6 @@ public class EmailOtpDAO {
         }
     }
 
-    /**
-     * Atomically consumes a valid recovery token so it can be used for only one password reset.
-     * Returns false if the token is invalid, expired, or was already used.
-     */
     public boolean consumeRecoveryToken(int userID, String rawToken) throws SQLException {
         String sql = """
             UPDATE emailrecoveryotp

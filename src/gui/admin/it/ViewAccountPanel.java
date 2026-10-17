@@ -19,7 +19,7 @@ import service.MfaService;
 import util.UIUtil;
 
 public class ViewAccountPanel extends javax.swing.JPanel {
-    
+
     private final AdminITPortal itPortal;
     private final AccountService accountService;
 
@@ -44,7 +44,8 @@ public class ViewAccountPanel extends javax.swing.JPanel {
         jButtonResetMfa.setBounds(690, 30, 170, 40);
     }
 
-    // Lost-authenticator override: the IT Admin must reauthenticate with their own password and TOTP
+    // Lost-authenticator override: the IT Admin must reauthenticate with their own
+    // password and TOTP
     private void resetMfa() {
         int userID = Integer.parseInt(jTextFieldUserID.getText());
 
@@ -70,7 +71,7 @@ public class ViewAccountPanel extends javax.swing.JPanel {
             UIUtil.showErrorMessage(this, "Failed to reset MFA: " + ex.getMessage(), "System Error");
         }
     }
-    
+
     private void populateDropdowns() {
         for (Role r : accountService.getAllRoles()) {
             jComboBoxRole.addItem(r.getRoleName());
@@ -79,7 +80,7 @@ public class ViewAccountPanel extends javax.swing.JPanel {
         jComboBoxAccountStatus.addItem("Active");
         jComboBoxAccountStatus.addItem("Deactivated");
     }
-    
+
     public void loadSelectedAccount(int userId) {
         UserAccount ua = accountService.getAccountById(userId);
         if (ua == null) {
@@ -101,11 +102,20 @@ public class ViewAccountPanel extends javax.swing.JPanel {
         jComboBoxRole.setSelectedItem(role.getRoleName());
         jComboBoxAccountStatus.setSelectedItem(ua.getAccountStatus());
     }
-    
+
     private void resetPassword() {
         int userID = Integer.parseInt(jTextFieldUserID.getText());
 
         if (!UIUtil.showConfirmation(this, "Are you sure you want to reset the password for User ID " + userID + "?")) {
+            return;
+        }
+
+        MfaReauthDialog.Result result = MfaReauthDialog.prompt(this, "Reset password for User ID " + userID + ".");
+        if (result == MfaReauthDialog.Result.LOCKED) {
+            MfaReauthDialog.endSession(this);
+            return;
+        }
+        if (result != MfaReauthDialog.Result.VERIFIED) {
             return;
         }
 
@@ -153,22 +163,24 @@ public class ViewAccountPanel extends javax.swing.JPanel {
         passwordRow.add(actions, BorderLayout.EAST);
 
         JPanel content = new JPanel(new BorderLayout(0, 8));
-        content.add(new JLabel("Temporary password generated. Copy it before closing this window; it cannot be recovered afterward."),
+        content.add(new JLabel(
+                "Temporary password generated. Copy it before closing this window; it cannot be recovered afterward."),
                 BorderLayout.NORTH);
         content.add(passwordRow, BorderLayout.CENTER);
 
         JOptionPane.showMessageDialog(this, content, "Temporary Password", JOptionPane.INFORMATION_MESSAGE);
     }
-    
+
     private void updateAccount() {
         int userID = Integer.parseInt(jTextFieldUserID.getText());
         String newUsername = jTextFieldUsername.getText().trim();
         String newEmail = jTextFieldEmailAddress.getText().trim();
         String newRoleName = jComboBoxRole.getSelectedItem().toString();
         String newStatus = jComboBoxAccountStatus.getSelectedItem().toString();
-        
+
         if (newUsername == null || newUsername.trim().isEmpty() || newEmail == null || newEmail.trim().isEmpty()
-                || newRoleName == null || "Select".equals(newRoleName) || newStatus == null || "Select".equals(newStatus)) {
+                || newRoleName == null || "Select".equals(newRoleName) || newStatus == null
+                || "Select".equals(newStatus)) {
             UIUtil.showErrorMessage(this, "All fields must be filled out.", "Error");
             return;
         }
@@ -190,7 +202,8 @@ public class ViewAccountPanel extends javax.swing.JPanel {
     }
 
     @SuppressWarnings("unchecked")
-    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    // <editor-fold defaultstate="collapsed" desc="Generated
+    // Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
         jPanel1 = new javax.swing.JPanel();
@@ -445,57 +458,57 @@ public class ViewAccountPanel extends javax.swing.JPanel {
         add(jPanel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, -1, -1));
     }// </editor-fold>//GEN-END:initComponents
 
-    private void jLabelBackMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabelBackMouseClicked
+    private void jLabelBackMouseClicked(java.awt.event.MouseEvent evt) {// GEN-FIRST:event_jLabelBackMouseClicked
         // TODO add your handling code here:
         CardLayout cardLayout = (CardLayout) itPortal.getPanelParentCard().getLayout();
         cardLayout.show(itPortal.getPanelParentCard(), "Accounts");
-    }//GEN-LAST:event_jLabelBackMouseClicked
+    }// GEN-LAST:event_jLabelBackMouseClicked
 
-    private void jTextFieldFullNameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldFullNameActionPerformed
+    private void jTextFieldFullNameActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jTextFieldFullNameActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jTextFieldFullNameActionPerformed
+    }// GEN-LAST:event_jTextFieldFullNameActionPerformed
 
-    private void jTextFieldUserIDActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldUserIDActionPerformed
+    private void jTextFieldUserIDActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jTextFieldUserIDActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jTextFieldUserIDActionPerformed
+    }// GEN-LAST:event_jTextFieldUserIDActionPerformed
 
-    private void jTextFieldEmployeeIDActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldEmployeeIDActionPerformed
+    private void jTextFieldEmployeeIDActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jTextFieldEmployeeIDActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jTextFieldEmployeeIDActionPerformed
+    }// GEN-LAST:event_jTextFieldEmployeeIDActionPerformed
 
-    private void jTextFieldUsernameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldUsernameActionPerformed
+    private void jTextFieldUsernameActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jTextFieldUsernameActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jTextFieldUsernameActionPerformed
+    }// GEN-LAST:event_jTextFieldUsernameActionPerformed
 
-    private void jTextFieldPositionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldPositionActionPerformed
+    private void jTextFieldPositionActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jTextFieldPositionActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jTextFieldPositionActionPerformed
+    }// GEN-LAST:event_jTextFieldPositionActionPerformed
 
-    private void jTextFieldEmailAddressActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldEmailAddressActionPerformed
+    private void jTextFieldEmailAddressActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jTextFieldEmailAddressActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jTextFieldEmailAddressActionPerformed
+    }// GEN-LAST:event_jTextFieldEmailAddressActionPerformed
 
-    private void jTextFieldDepartmentActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldDepartmentActionPerformed
+    private void jTextFieldDepartmentActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jTextFieldDepartmentActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jTextFieldDepartmentActionPerformed
+    }// GEN-LAST:event_jTextFieldDepartmentActionPerformed
 
-    private void jButtonUpdateActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonUpdateActionPerformed
+    private void jButtonUpdateActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jButtonUpdateActionPerformed
         // TODO add your handling code here:
         updateAccount();
-    }//GEN-LAST:event_jButtonUpdateActionPerformed
+    }// GEN-LAST:event_jButtonUpdateActionPerformed
 
-    private void jButtonResetPasswordActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonResetPasswordActionPerformed
+    private void jButtonResetPasswordActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jButtonResetPasswordActionPerformed
         // TODO add your handling code here:
         resetPassword();
-    }//GEN-LAST:event_jButtonResetPasswordActionPerformed
+    }// GEN-LAST:event_jButtonResetPasswordActionPerformed
 
-    private void jComboBoxRoleActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxRoleActionPerformed
+    private void jComboBoxRoleActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jComboBoxRoleActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jComboBoxRoleActionPerformed
+    }// GEN-LAST:event_jComboBoxRoleActionPerformed
 
-    private void jComboBoxAccountStatusActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxAccountStatusActionPerformed
+    private void jComboBoxAccountStatusActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jComboBoxAccountStatusActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jComboBoxAccountStatusActionPerformed
+    }// GEN-LAST:event_jComboBoxAccountStatusActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButtonResetPassword;

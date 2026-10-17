@@ -298,7 +298,8 @@ database/ias2/08_auth_phase3_audit_nullable_user.sql
 #### Implementation Details
 - The OTP migration stores only OTP and recovery-token hashes. 
 - OTP emails are sent over SMTP with **STARTTLS required**: if the mail server does not offer TLS, sending fails instead of falling back to an unencrypted connection.
-- OTPs expire after 10 minutes, are consumed on successful verification, has limited verification attempts, and are limited to ten requests per account per hour (abundant limit for testing). 
+- OTP requests enforce a **30-second burst cooldown** between resends as well as a **10-request hourly limit** per account.
+- OTP verification is limited to **3 failed attempts**, after which the OTP is invalidated, audited as `"LOCKED_OUT"`, and the UI communicates that a new OTP request is required.
 - Recovery tokens expire after 15 minutes and are **single use**: a successful reset consumes the token through an atomic database update, so it cannot be reused. The new password is checked against the policy first, so a rejected password does not use up the token.
 - Recovery requests, verification results, and reset results are written to `AuditLog`; event values never include email addresses, OTPs, recovery tokens, or passwords. 
 - The audit migration allows attempts for unknown email addresses to be recorded with a `NULL` user ID.

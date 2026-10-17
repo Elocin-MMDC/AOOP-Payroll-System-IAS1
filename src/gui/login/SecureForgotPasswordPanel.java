@@ -6,6 +6,7 @@ import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+import model.dao.EmailOtpDAO;
 import service.PasswordRecoveryService;
 import util.UIUtil;
 
@@ -64,17 +65,23 @@ public class SecureForgotPasswordPanel extends JPanel {
 
         try {
             PasswordRecoveryService service = new PasswordRecoveryService();
-            boolean success = service.requestPasswordResetOTP(email);
-            if (success) {
+            EmailOtpDAO.OtpRequestResult result = service.requestPasswordResetOTP(email);
+
+            if (result == EmailOtpDAO.OtpRequestResult.CREATED) {
                 UIUtil.showInfoMessage(this,
                         "If an account exists for this email, a recovery code has been sent.",
                         "Password Reset");
                 emailField.setText("");
-                
+
                 OtpVerificationDialog otpDialog = new OtpVerificationDialog(loginPortal, email);
                 otpDialog.setVisible(true);
+            } else if (result == EmailOtpDAO.OtpRequestResult.BURST_COOLDOWN) {
+                UIUtil.showWarningMessage(this, "Please wait before requesting another code.", "Reset Password");
+            } else if (result == EmailOtpDAO.OtpRequestResult.RATE_LIMITED) {
+                UIUtil.showWarningMessage(this, "Hourly request limit reached (10 per hour). Please try again later.",
+                        "Rate Limit Reached");
             } else {
-                UIUtil.showErrorMessage(this, "Unable to send reset email at this time.", "Reset Password Failed");
+                UIUtil.showErrorMessage(this, "Unable to send a password reset code at this time. Please contact your administrator or try again later.", "Reset Password Failed");
             }
         } catch (Exception ex) {
             UIUtil.showErrorMessage(this, ex.getMessage(), "Reset Password Failed");
